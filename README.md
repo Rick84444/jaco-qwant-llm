@@ -1,67 +1,89 @@
-# JACO Qwant LLM
+# JACO Model Runtime
 
-Aktiveringsgleshet ovanpå kvantiserade vikter (Q8/Q4) för on-device-LLM på ARM. Kärnan hoppar över hela viktrader för inaktiva kanaler. Varje påstående mäts mot den snabbaste täta kvantiserade kärnan: fel, minnestrafik, tid och batterienergi.
+A portable model-runtime component for JACO. It speaks OpenAI-compatible chat to a REAL configured model provider and retains ACFQ as an experimental ARM/NEON GEMV kernel. Later, JACO-CODE can import the provider adapter or call the local API. No duplicate agent, fake chat gateway or competing JACO supervisor is introduced.
 
-## Start (Termux)
+**Current limitations:** ACFQ is NOT connected to any language model's inference graph. No token/s, model perplexity, or energy improvement has been proven by this adapter. Real model replies are forwarded from a working upstream service.
 
-```
-pkg install git
-git clone https://github.com/<ditt-konto>/jaco-qwant-llm
-cd jaco-qwant-llm
-./start.sh
-```
+## Termux / Linux quickstart
 
-`start.sh` installerar clang, python och numpy om de saknas. Den bygger kärnan, kör självtestet och kör sedan benchmarken. Resultatet skrivs till `report-<tid>.json`.
+Node.js 20 or newer is required. On Termux:
 
-- `./start.sh acts`: kör på riktiga aktiveringar som fångats på PC.
-- `./start.sh acts energy`: samma, plus energi per token. Kör ur laddaren.
+    pkg install nodejs
+    git clone https://github.com/Rick84444/jaco-qwant-llm.git
+    cd jaco-qwant-llm
 
+Start your actual model server separately (e.g. llama.cpp with its OpenAI-compatible API).
 
-## Filer
+    export JACO_MODEL_BASE_URL=http://127.0.0.1:11435/v1
+    # Set JACO_MODEL_ID if multiple models are listed by the provider.
+    ./start.sh doctor
+    ./start.sh chat "Hej JACO"
+    ./start.sh serve
 
-| Fil | Roll |
-|---|---|
-| `acfq_kernel.c` | Kvantiserad kärna: fp32, Q8, Q4 samt Q8h/Q4h (fp16-aritmetik). Hela indatarader kan hoppas över. NEON med 4-radsfusion. |
-| `acfq_rig.py` | Huvudriggen. Fel mot float64, MB/token, interfolierad tidtagning och energi via batterisensorn. |
-| `test_acfq.c` | Självtest av kärnan mot float64-referens, alla format, tät och gles. |
-| `capture_activations.py` | Körs på PC. `capture` dumpar riktiga aktiveringar. `eval` mäter perplexitet med gleshet, och med `--wquant q4` även Q4-vikter i exakt kärnans layout. |
-| `acf_kernel.c`, `acf_rig.py` | Första fp32-riggen, inklusive originalets blockenergimask. |
-| `build.sh` | Bygger båda biblioteken och kör självtestet. |
-| `start.sh` | Installerar beroenden, bygger, testar och kör. |
-| `.github/workflows/test.yml` | CI: skalär, NEON och NEON+fp16 (via qemu) samt rök-körning av riggarna. |
+The default runtime listens ONLY on localhost port 3131. Ctrl+C stops it. No automatic installs and no unprotected port 8000 server.
 
-## Layout
+## API for future JACO-CODE integration
 
-Rad i (indatakanal i) lagras som `[N/32 fp16-skalor][kvantiserad nyttolast]`. Grupper om 32 löper längs utdata.
+| Path | Contract |
+| --- | --- |
+| GET /health | 200 if an actual upstream model is discoverable and selectable; otherwise 503. Model discovery is NOT inference proof. |
+| GET /capabilities | Kernel availability and honest ACFQ inference status (currently disabled). |
+| GET /v1/models | Model IDs returned by the upstream API. |
+| POST /v1/chat/completions | Forwards the request to the real provider and returns its response, including SSE streaming. |
 
-- Q4 tar 4,5 bitar per vikt, samma som Q4_0.
-- En inaktiv kanal hoppar över hela sin rad, både skalor och nyttolast.
-- q8h/q4h använder samma bytes men dekvantiserar via int16 → fp16 och ackumulerar 4 rader i fp16 innan värdet breddas till fp32. Det kräver ARMv8.2 FP16, vilket Pixel 10 har.
+Try:
 
-## Manuell körning i Termux
+    curl http://127.0.0.1:3131/health
+    curl http://127.0.0.1:3131/capabilities
+    curl http://127.0.0.1:3131/v1/chat/completions \
+      -H "Content-Type: application/json" \
+      -d '{"messages":[{"role":"user","content":"Hej JACO"}]}'
 
-```
-./build.sh                                        # ska sluta med ALL PASS
-python3 acfq_rig.py --synthetic                   # snabb översikt
-python3 acfq_rig.py --data acts                   # riktiga aktiveringar från PC:n
-python3 acfq_rig.py --data acts --energy          # ur laddaren, skärmen på konstant ljusstyrka
-```
+Integration alternative: import the exported modules from the package rather than starting a second HTTP server. JACO-CODE remains owner of process supervision, approval policy, memory, tasks and tools.
 
-## Körning på PC
+### Configuration
 
-```
-python capture_activations.py eval --model Qwen/Qwen2.5-0.5B --wquant q4 --sparsities 0.3 0.4 0.5
-python capture_activations.py capture --model Qwen/Qwen2.5-0.5B --out acts
-```
+- JACO_MODEL_BASE_URL: upstream URL including /v1 (default: http://127.0.0.1:11435/v1).
+- JACO_MODEL_ID: exact upstream model identifier; required when more than one is available.
+- JACO_MODEL_API_KEY: optional token used for upstream requests only, never written in logs.
+- JACO_MODEL_TIMEOUT_MS: HTTP timeout, default 120000.
+- JACO_MODEL_RUNTIME_PORT: localhost HTTP port, default 3131.
 
-## Läsa resultatet
+### Commands
 
-- **opponent**: den snabbaste täta kvantiserade varianten på just din telefon.
-- **win**: snabbare än opponent, och felet ökar högst `--err-budget` (standard 0,03).
-- **MB/tok**: deterministiskt mått på minnestrafik. Det är den största posten i energiåtgången.
-- **mJ/tok**: nettoenergi per token över tomgång. Kräver att telefonen går på batteri. Kör gärna 2–3 gånger, sensorn brusar.
-- **eval**-raden `dense q4` är referensen. Gleshetsraderna under den ska jämföras med den, inte med fp.
+- ./start.sh serve: run HTTP adapter in foreground (default).
+- ./start.sh status: fetch live runtime health over localhost.
+- ./start.sh doctor: diagnose configured upstream without starting HTTP adapter.
+- ./start.sh capabilities: inspect compile/integration truthfulness.
+- ./start.sh chat "question": ask real configured model; fails if none is available.
+- npm test: Node.js HTTP/adapter contract tests (mock provider is ONLY a test fixture).
 
-## Licens
+### ACFQ research and benchmarks
 
-MIT
+The original C/Python kernel research is preserved, separate from runtime operations:
+
+    pkg install clang python python-numpy
+    ./build.sh
+    python3 acfq_rig.py --synthetic
+    python3 acfq_rig.py --data acts
+
+- acfq_kernel.c: Q4/Q8 activation-sparse GEMV; NEON/fp16 paths.
+- test_acfq.c: C numerical self-tests.
+- acfq_rig.py: numerical accuracy, timing and approximate byte access.
+- capture_activations.py: PyTorch/Transformers hooks for actual model activations, run on a capable computer.
+
+Important provenance: files named X_*.npy and W_*.npy under acts/ may be generated artificially. Their existence does NOT prove real GGUF/LLM activations. Reading raw GGUF bytes as int8 is NOT a GGUF tensor decoder. Benchmark provenance remains unverified unless independently established. MB/tok is an estimated logical weight-read count, not measured DRAM traffic. Battery current APIs may return unreliable or negative net mJ/tok; do not use them as validated energy savings.
+
+ACFQ activation requires proper GGUF tensor conversion, recorded REAL activations, model-level perplexity, end-to-end tokens/s against original llama.cpp/GGML, ARM verification, safe API validation and rollback. The experimental kernel is never silently enabled.
+
+## Files
+
+- runtime/provider.mjs: reusable real-model provider adapter and status.
+- runtime/server.mjs: loopback HTTP adapter and capability declaration.
+- runtime/cli.mjs: small operator interface without daemon supervision.
+- runtime/runtime.test.mjs: HTTP contract tests.
+- package.json: scripts and export contract.
+- acfq_kernel.c, acfq_rig.py, capture_activations.py: kernel experiment.
+- .github/workflows/test.yml: Node + C/NEON test workflow.
+
+This repo is a model runtime COMPONENT, not the full JACO Cognitive Runtime.

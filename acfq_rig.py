@@ -273,7 +273,7 @@ def run_layer(lib, name, W, X, args):
     for r in rows.values():
         r["vs_opp"] = base["us"] / r["us"]
         r["err_vs_opp"] = r["err"] - base["err"]
-        r["win"] = bool(r["mask"] != "dense" and r["vs_opp"] > 1.0
+        r["win"] = bool(r["fmt"] != "f32" and r["mask"] != "dense" and r["vs_opp"] > 1.0
                         and r["err_vs_opp"] <= args.err_budget)
     winners = [r for r in rows.values() if r.get("win")]
     best = max(winners, key=lambda r: r["vs_opp"]) if winners else None
@@ -328,7 +328,7 @@ def main():
     ap.add_argument("--reps", type=int, default=3)
     ap.add_argument("--rounds", type=int, default=7)
     ap.add_argument("--err-budget", type=float, default=0.03,
-                    help="allowed error increase over dense Q4 (absolute, relative-L2 units)")
+                    help="allowed error increase over fastest dense quantized format (relative-L2 units)")
     ap.add_argument("--energy", action="store_true")
     ap.add_argument("--energy-seconds", type=float, default=4.0)
     ap.add_argument("--energy-hz", type=float, default=20.0)
@@ -342,7 +342,7 @@ def main():
         source = "SYNTHETIC (random weights, heavy-tailed activations)"
     else:
         layers = dir_layers(args.data, args.max_tokens)
-        source = "CAPTURED from %s" % args.data
+        source = "USER_SUPPLIED_NPY (provenance unverified) from %s" % args.data
         if not layers:
             sys.exit("no usable W_*.npy / X_*.npy pairs in %s" % args.data)
     print("source: %s" % source)

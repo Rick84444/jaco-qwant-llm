@@ -1,8 +1,13 @@
 *.so
 test_acfq
+t_neon
+t_fp16
+fp16.log
 __pycache__/
 acts/
 report-*.json
 acf_report.json
 acfq_report.json
 acf_eval.json
+node_modules/
+.env

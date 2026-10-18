@@ -1,0 +1,23 @@
+{
+  "name": "jaco-model-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Provider-neutral JACO model-runtime component with experimental ACFQ GEMV",
+  "engines": {
+    "node": ">=20"
+  },
+  "exports": {
+    "./provider": "./runtime/provider.mjs",
+    "./server": "./runtime/server.mjs"
+  },
+  "scripts": {
+    "start": "node runtime/cli.mjs serve",
+    "doctor": "node runtime/cli.mjs doctor",
+    "status": "node runtime/cli.mjs status",
+    "chat": "node runtime/cli.mjs chat",
+    "test": "node --test runtime/*.test.mjs",
+    "kernel:check": "sh ./build.sh",
+    "kernel:bench": "python3 acfq_rig.py --synthetic"
+  }
+}
