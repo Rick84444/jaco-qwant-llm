@@ -46,8 +46,11 @@ Integration alternative: import the exported modules from the package rather tha
 - JACO_MODEL_BASE_URL: upstream URL including /v1 (default: http://127.0.0.1:11435/v1).
 - JACO_MODEL_ID: exact upstream model identifier; required when more than one is available.
 - JACO_MODEL_API_KEY: optional token used for upstream requests only, never written in logs.
-- JACO_MODEL_TIMEOUT_MS: HTTP timeout, default 120000.
+- JACO_MODEL_TIMEOUT_MS: HTTP timeout, default 300000 (Bonsai has very slow prompt processing on CPU).
 - JACO_MODEL_RUNTIME_PORT: localhost HTTP port, default 3131.
+- JACO_MODEL_THINKING: auto (default), off, on or provider. Auto sends `enable_thinking=false` for Bonsai only; other models are unchanged. Per-request `chat_template_kwargs.enable_thinking` always takes precedence.
+
+On the Pixel 10 Pro, Bonsai-27B-Q1_0 has been observed at ~0.35 prompt tokens/s and ~0.37 generated tokens/s in CPU mode. `enable_thinking=false` allows short visible responses but **does not accelerate prompt processing**. CLI `chat` limits generation to 32 tokens by default to prevent runaway CPU tests. These observations are device-specific, not general benchmark claims.
 
 ### Commands
 

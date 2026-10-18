@@ -86,3 +86,53 @@ test("chat input checked before any request", async () => {
   await assert.rejects(chatCompletion(cfg, { messages: [] }), /Nonempty/);
   await assert.rejects(chatCompletion(cfg, { messages: [{ role: "invalid", content: "x" }] }), /Invalid chat/);
 });
+
+test("Bonsai defaults to direct answers while preserving explicit thinking requests", async () => {
+  const requests = [];
+  const upstream = await mock(async (req,res) => {
+    if (req.url === "/v1/models") return send(res, 200, { data: [{ id: "Bonsai-27B-Q1_0.gguf" }] });
+    let body = "";
+    for await (const p of req) body += p;
+    requests.push(JSON.parse(body));
+    send(res, 200, { choices: [{ message: { content: "4" } }] });
+  });
+  try {
+    const cfg = configFromEnv({ JACO_MODEL_BASE_URL: upstream.base });
+    const base = { messages: [{ role: "user", content: "2+2=" }] };
+    await chatCompletion(cfg, base);
+    await chatCompletion(cfg, { ...base, chat_template_kwargs: { enable_thinking: true } });
+    await chatCompletion(configFromEnv({
+      JACO_MODEL_BASE_URL: upstream.base, JACO_MODEL_THINKING: "on"
+    }), base);
+    await chatCompletion(configFromEnv({
+      JACO_MODEL_BASE_URL: upstream.base, JACO_MODEL_THINKING: "provider"
+    }), base);
+    assert.equal(requests.length, 4);
+    assert.equal(requests[0].chat_template_kwargs.enable_thinking, false);
+    assert.equal(requests[1].chat_template_kwargs.enable_thinking, true);
+    assert.equal(requests[2].chat_template_kwargs.enable_thinking, true);
+    assert.equal(requests[3].chat_template_kwargs, undefined);
+  } finally { await upstream.close(); }
+});
+
+test("thinking modes do not modify other provider requests unless requested", async () => {
+  let upstreamBody;
+  const upstream = await mock(async (req, res) => {
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    upstreamBody = JSON.parse(body);
+    send(res, 200, { choices: [{ message: { content: "ok" } }] });
+  });
+  try {
+    await chatCompletion(configFromEnv({
+      JACO_MODEL_BASE_URL: upstream.base, JACO_MODEL_ID: "another-model"
+    }), { messages: [{ role: "user", content: "hej" }] });
+    assert.equal(upstreamBody.chat_template_kwargs, undefined);
+    await chatCompletion(configFromEnv({
+      JACO_MODEL_BASE_URL: upstream.base, JACO_MODEL_ID: "another-model",
+      JACO_MODEL_THINKING: "off"
+    }), { messages: [{ role: "user", content: "hej" }] });
+    assert.equal(upstreamBody.chat_template_kwargs.enable_thinking, false);
+    assert.throws(() => configFromEnv({ JACO_MODEL_THINKING: "sometimes" }), /must be/);
+  } finally { await upstream.close(); }
+});

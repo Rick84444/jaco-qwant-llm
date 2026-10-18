@@ -29,7 +29,7 @@ async function main() {
     const status = await inspectProvider(cfg);
     if (status.state !== "READY") throw new Error(status.reason);
     const result = await chatCompletion(cfg, {
-      model: status.model, stream: false, messages: [{ role: "user", content: prompt }]
+      model: status.model, stream: false, max_tokens: 32, messages: [{ role: "user", content: prompt }]
     });
     if (!result.ok) throw new Error("Upstream model returned HTTP " + result.status);
     const value = await result.json();

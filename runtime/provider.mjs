@@ -11,14 +11,17 @@ export function configFromEnv(env = process.env) {
   try { url = new URL(raw); } catch { throw new RuntimeError("Invalid JACO_MODEL_BASE_URL", 400); }
   if (!["http:", "https:"].includes(url.protocol) || url.username || url.password || url.search || url.hash)
     throw new RuntimeError("Model URL must be HTTP(S) without credentials or query", 400);
-  const timeoutMs = Number(env.JACO_MODEL_TIMEOUT_MS || 120000);
+  const timeoutMs = Number(env.JACO_MODEL_TIMEOUT_MS || 300000);
   const port = Number(env.JACO_MODEL_RUNTIME_PORT || 3131);
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1000 || timeoutMs > 600000)
     throw new RuntimeError("Invalid JACO_MODEL_TIMEOUT_MS", 400);
   if (!Number.isInteger(port) || port < 1 || port > 65535)
     throw new RuntimeError("Invalid JACO_MODEL_RUNTIME_PORT", 400);
+  const thinkingMode = (env.JACO_MODEL_THINKING || "auto").toLowerCase();
+  if (!["auto", "off", "on", "provider"].includes(thinkingMode))
+    throw new RuntimeError("JACO_MODEL_THINKING must be auto, off, on or provider", 400);
   return { baseUrl: url.toString().replace(/\/+$/, ""), model: env.JACO_MODEL_ID?.trim() || null,
-    apiKey: env.JACO_MODEL_API_KEY || "", timeoutMs, port };
+    apiKey: env.JACO_MODEL_API_KEY || "", timeoutMs, port, thinkingMode };
 }
 async function request(config, path, opts = {}, fetchImpl = fetch) {
   const timeout = AbortSignal.timeout(config.timeoutMs);
@@ -72,6 +75,21 @@ export async function chatCompletion(config, payload, fetchImpl = fetch, signal)
   if (payload.model != null && (typeof payload.model !== "string" || !payload.model))
     throw new RuntimeError("Invalid model ID", 400);
   const model = payload.model || config.model || selectModel(config, await discoverModels(config, fetchImpl));
+  // Bonsai's Qwen chat template accepts enable_thinking=false. Keep the
+  // default provider-neutral for other models. Never override explicit
+  // per-request options supplied by a JACO agent or advanced caller.
+  let forwarded = { ...payload, model };
+  const mode = config.thinkingMode || "auto";
+  const desired = mode === "off" ? false : mode === "on" ? true :
+    mode === "auto" && /bonsai/i.test(model) ? false : undefined;
+  const kwargs = payload.chat_template_kwargs;
+  if (desired !== undefined && (kwargs === undefined ||
+      (kwargs && typeof kwargs === "object" && !Array.isArray(kwargs) &&
+       kwargs.enable_thinking === undefined))) {
+    forwarded = { ...forwarded, chat_template_kwargs: {
+      ...(kwargs || {}), enable_thinking: desired
+    }};
+  }
   return request(config, "chat/completions", { method: "POST",
-    body: JSON.stringify({ ...payload, model }), signal }, fetchImpl);
+    body: JSON.stringify(forwarded), signal }, fetchImpl);
 }
