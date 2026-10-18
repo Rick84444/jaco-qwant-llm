@@ -52,3 +52,14 @@ source-version parity. An ACFQ native hook remains unverified until operator
 registration, layouts, numerical correctness, quality and comparative speed
 are proven. Running this tool does not modify or restart the working LiteRT
 and JACO processes. No active AI subagent is claimed.
+
+### Corrected upstream source map
+
+Initial review retrieved only 2 of 5 files because 3 paths were wrong.
+The pinned revision `73abd38c3a11a4fa9f3608ce4b5bdc9cdc18c6d6`
+was independently verified to contain `c/engine.cc`, `c/engine.h` and
+`runtime/executor/litert_compiled_model_executor_utils.cc`.
+The corrected review now retrieves these paths. `c/engine.cc` contains
+`litert_lm_engine_create`; this remains an engine creation entry point,
+**not evidence of a custom dot-product operator registration**. The matched
+symbols are first-pass lexical evidence only.

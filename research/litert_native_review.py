@@ -12,9 +12,9 @@ BASE="https://raw.githubusercontent.com/google-ai-edge/LiteRT-LM"
 TARGETS={
  "executor_settings":"runtime/executor/llm_executor_settings.h",
  "executor_settings_impl":"runtime/executor/llm_executor_settings.cc",
- "executor":"runtime/executor/litert_compiled_model_executor.cc",
- "engine_c_api":"c/litert_lm_c_api.cc",
- "cpu_executor":"runtime/executor/llm_executor.cc",
+ "executor":"runtime/executor/litert_compiled_model_executor_utils.cc",
+ "engine_c_api":"c/engine.cc",
+ "cpu_executor":"c/engine.h",
 }
 QUESTIONS={
  "backend_dispatch":{"needles":("enable_ynnpack","Backend::CPU","CpuConfig"),
