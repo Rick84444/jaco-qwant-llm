@@ -76,6 +76,7 @@ class NativeGemmaInt4Tests(unittest.TestCase):
         if skip:
             self.assertGreater(skipped.value,0)
         else:self.assertEqual(skipped.value,0)
+        p._keepalive=(aa,ww,ss,zz,bb,yy)  # keep ctypes buffers valid for follow-up checks
         return p,yy
     def test_odd_k_cross_row_packing(self):self.invoke(33,3,3,False)
     def test_odd_k_exact_zero_skipping(self):self.invoke(33,3,3,True)
