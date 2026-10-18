@@ -18,6 +18,8 @@ jobs:
           sudo apt-get update -q
           sudo apt-get install -y -q qemu-user-static
           pip install numpy ziglang
+      - name: C++ native probe compilation
+        run: CXX=g++ sh bench/build.sh
       - name: Scalar path (x86-64)
         run: |
           gcc -O2 -Wall -Wextra test_acfq.c -o test_acfq -lm

@@ -11,3 +11,5 @@ acfq_report.json
 acf_eval.json
 node_modules/
 .env
+
+bench/native_probe

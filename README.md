@@ -90,3 +90,7 @@ ACFQ activation requires proper GGUF tensor conversion, recorded REAL activation
 - .github/workflows/test.yml: Node + C/NEON test workflow.
 
 This repo is a model runtime COMPONENT, not the full JACO Cognitive Runtime.
+
+## C++ Native Benchmark
+
+Build with `sh bench/build.sh`, then run `./bench/native_probe --port 11435 --reps 2 --predict 4` while the **existing** llama.cpp model server runs. This measures actual llama.cpp `/completion` token throughput; it does **not** accelerate GGML or ACFQ. See [benchmark instructions](bench/README.md).
