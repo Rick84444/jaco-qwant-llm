@@ -24,6 +24,8 @@ jobs:
         run: python -m unittest discover -s runtime -p 'test_engine_patch.py'
       - name: LiteRT architecture-review tests
         run: python -m unittest discover -s research -p 'test_*.py'
+      - name: Native ACFQ operator ABI tests
+        run: python -m unittest discover -s native -p 'test_*.py'
       - name: C++ native probe compilation
         run: CXX=g++ sh bench/build.sh
       - name: Scalar path (x86-64)
