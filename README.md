@@ -22,6 +22,42 @@ Start your actual model server separately (e.g. llama.cpp with its OpenAI-compat
 
 The default runtime listens ONLY on localhost port 3131. Ctrl+C stops it. No automatic installs and no unprotected port 8000 server.
 
+## Gemma 4 E2B on Android / LiteRT-LM
+
+Use an already installed LiteRT-LM model instead of building llama.cpp or
+loading a second copy of Bonsai. Run `litert-lm serve --host 127.0.0.1
+--port 9379` in a separate terminal only if the provider is not running.
+Check `curl -fsS http://127.0.0.1:9379/v1/models`: it must list
+`gemma4-e2b`.
+
+Configure the **same** provider-neutral JACO Model Runtime:
+
+```sh
+cd ~/jaco-qwant-llm
+export JACO_MODEL_BASE_URL=http://127.0.0.1:9379/v1
+export JACO_MODEL_ID=gemma4-e2b
+export JACO_MODEL_THINKING=provider
+./start.sh doctor
+./start.sh chat "Svara med ett kort hej"
+./start.sh serve
+```
+
+Run `./start.sh serve` in its own Termux session. In another session:
+
+```sh
+curl -fsS http://127.0.0.1:3131/v1/models
+curl -fsS http://127.0.0.1:3131/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"messages":[{"role":"user","content":"Hej"}],"max_tokens":32}'
+```
+
+The upstream LiteRT endpoint remains on **9379**, adapter on **3131**,
+and the existing JACO Core owns **3000**. Do not start a second
+llama-server or bind the model directly to 3000. `doctor` checks
+discovery only; the `chat` request verifies actual inference.
+No JACO-CODE agent tools or memory are automatically connected by
+this component. Configure those in the JACO Core integration.
+
 ## API for future JACO-CODE integration
 
 | Path | Contract |
