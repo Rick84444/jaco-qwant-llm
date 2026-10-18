@@ -14,13 +14,49 @@ from pathlib import Path
 from inspect_gemma_graph import FB, FormatError, TYPES, inspect_file
 
 def vector_sample(fb, table, field, fmt, limit=3):
-    vector=fb.vector(table,field)
-    if vector is None:return {"count":0,"preview":[]}
-    start,count=vector
-    size=struct.calcsize(fmt)
-    fb.check(start,count*size)
+    """Bounded preview of potentially very large quantization arrays.
+
+    FB.vector has a 250k-element structural limit for tables and indices.
+    Weight scale/zero-point vectors may legitimately exceed that number.
+    Read their length directly, verify the ENTIRE byte range lies in this
+    TFLite section, then decode only a fixed-size preview.
+    """
+    if not 0 <= limit <= 16:
+        raise ValueError("preview limit must be between 0 and 16")
+    offset=fb.reference(table,field)
+    if offset is None:
+        return {"count":0,"preview":[]}
+    count=fb.u32(offset)
+    start=offset+4
+    element_size=struct.calcsize(fmt)
+    fb.check(start,count*element_size)
     return {"count":count,
-            "preview":[fb.read(fmt,start+size*i) for i in range(min(count,limit))]}
+            "preview":[fb.read(fmt,start+element_size*i)
+                       for i in range(min(count,limit))]}
+
+
+QUANTIZATION_DETAILS={0:"NONE",1:"CustomQuantization",
+                      2:"BlockwiseQuantization",3:"MultiAxisQuantization"}
+
+
+def quantization_details(fb,quant):
+    """Describe special TFLite quantization, without decoding any weights."""
+    dtype=fb.scalar(quant,4,"<B")
+    result={"type":QUANTIZATION_DETAILS.get(dtype,f"UNKNOWN_{dtype}"),
+            "type_id":dtype}
+    if dtype == 0:
+        return result
+    detail=fb.reference(quant,5)
+    if detail is None:
+        raise FormatError("quantization details_type is set but details are absent")
+    if dtype in (2,3):
+        result["scale_tensor_index"]=fb.scalar(detail,0,"<i")
+        result["zero_point_tensor_index"]=fb.scalar(detail,1,"<i")
+        result["block_size"]=fb.scalar(detail,2,"<i")
+        if dtype == 3:
+            result["quantized_dimensions"]=fb.values(detail,3,12)
+    # Unknown/custom details are explicitly not interpreted as standard scales.
+    return result
 
 def tensor_detail(fb,tensors,index):
     if index<0:return {"index":index,"optional":True}
@@ -36,7 +72,8 @@ def tensor_detail(fb,tensors,index):
             "scales":vector_sample(fb,quant,2,"<f"),
             "zero_points":vector_sample(fb,quant,3,"<q"),
             "quantized_dimension":fb.scalar(quant,6,"<i"),
-            "details_type":fb.scalar(quant,4,"<B")}
+            "details_type":fb.scalar(quant,4,"<B"),
+            "details":quantization_details(fb,quant)}
     else:result["quantization"]=None
     return result
 

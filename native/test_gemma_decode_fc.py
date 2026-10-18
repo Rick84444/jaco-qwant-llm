@@ -33,6 +33,48 @@ class QuantizationEvidenceTests(unittest.TestCase):
         evidence=mod.vector_sample(reader,24,2,"<f",limit=2)
         self.assertEqual(evidence["count"],4)
         self.assertEqual(len(evidence["preview"]),2)
+    def test_large_valid_quantization_vector_is_previewed(self):
+        # Regression: a legitimate scale vector >250,000 elements must not
+        # hit the structural-vector limit or be copied into Python RAM.
+        n=250001
+        buf=bytearray(56+4*n)
+        struct.pack_into("<HHHHHH",buf,8,12,16,0,0,4,0)
+        struct.pack_into("<i",buf,24,16)
+        struct.pack_into("<I",buf,28,20)
+        struct.pack_into("<I",buf,48,n)
+        struct.pack_into("<f",buf,52,1.25)
+        struct.pack_into("<f",buf,56,2.5)
+        info=mod.vector_sample(mod.FB(buf,0,len(buf)),24,2,"<f")
+        self.assertEqual(info["count"],n)
+        self.assertEqual(info["preview"],[1.25,2.5,0.0])
+
+    def test_oversized_out_of_bounds_quantization_vector_rejected(self):
+        buf=bytearray(128)
+        struct.pack_into("<HHHHHH",buf,8,12,16,0,0,4,0)
+        struct.pack_into("<i",buf,24,16)
+        struct.pack_into("<I",buf,28,20)
+        struct.pack_into("<I",buf,48,300000)
+        with self.assertRaises(mod.FormatError):
+            mod.vector_sample(mod.FB(buf,0,len(buf)),24,2,"<f")
+
+    def test_blockwise_quantization_details(self):
+        buf=bytearray(128)
+        # QuantizationParameters table 40 with fields 4 and 5.
+        struct.pack_into("<HH",buf,8,16,16)
+        struct.pack_into("<HH",buf,20,4,8)
+        struct.pack_into("<i",buf,40,32)
+        struct.pack_into("<B",buf,44,2)
+        struct.pack_into("<I",buf,48,16)
+        # BlockwiseQuantization table 64 with field indices 0,1,2.
+        struct.pack_into("<HHHHH",buf,54,10,16,4,8,12)
+        struct.pack_into("<i",buf,64,10)
+        struct.pack_into("<iii",buf,68,13,-1,32)
+        info=mod.quantization_details(mod.FB(buf,0,len(buf)),40)
+        self.assertEqual(info["type"],"BlockwiseQuantization")
+        self.assertEqual(info["scale_tensor_index"],13)
+        self.assertEqual(info["zero_point_tensor_index"],-1)
+        self.assertEqual(info["block_size"],32)
+
     def test_invalid_reference_is_rejected(self):
         buf=bytearray(80)
         struct.pack_into("<HHHHHH",buf,8,12,16,0,0,4,0)
