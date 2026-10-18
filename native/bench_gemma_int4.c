@@ -122,6 +122,8 @@ static void run_case(int k,int n,int zero_pct,int reps) {
   p.executed_products=&dense_products;p.neon_blocks=&neon_blocks;
   if(jaco_gemma_int4_gemv(&p)) {fprintf(stderr,"dense failed\n");exit(3);}
   const double dense_error=max_abs_error(oracle,dense,n);
+  const uint64_t dense_blocks=neon_blocks;
+  p.neon_blocks=NULL; /* Preserve dense evidence; sparse is scalar. */
   p.output=sparse;p.skip_exact_zero=1;
   p.executed_products=&sparse_products;
   p.skipped_products=&skipped;
@@ -141,7 +143,7 @@ static void run_case(int k,int n,int zero_pct,int reps) {
     k,n,zero_pct,100.0*(double)zeros/(double)k,
     scalar_us,dense_us,sparse_us,scalar_us/dense_us,
     scalar_us/sparse_us,dense_error,sparse_error,
-    neon_blocks,skipped);
+    dense_blocks,skipped);
   fflush(stdout);
   free(weights);free(x);free(scales);free(bias);
   free(oracle);free(dense);free(sparse);
