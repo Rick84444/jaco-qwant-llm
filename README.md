@@ -154,3 +154,15 @@ throughput differences. Establish a repeatable baseline before modifying any
 quantized tensor kernels. Real ACFQ integration requires a compatible tensor
 representation, numerical-equivalence tests, full-model quality validation,
 controlled end-to-end throughput comparison, and rollback on regressions.
+
+## LiteRT engine compatibility check (not an engine monkeypatch)
+
+The optional `runtime/engine_patch.py` is deliberately a **read-only probe**.
+Run `python3 runtime/engine_patch.py` to inspect whether the local Python
+LiteRT module and `libacfq.so` are present/loadable. Neither is proof of
+kernel execution in Gemma. This module does not change `litert_lm.Engine`,
+intercept `create_conversation()`, mutate installed packages, or alter the
+running LiteRT server. A Python FFI call before inference cannot redirect
+compiled LiteRT operator execution into ACFQ. Enabling a real replacement
+requires identifying a supported custom operator/delegate interface,
+matching tensor types and layouts, and passing numerical and end-to-end tests.
