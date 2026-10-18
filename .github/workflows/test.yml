@@ -26,6 +26,14 @@ jobs:
         run: python -m unittest discover -s research -p 'test_*.py'
       - name: Native ACFQ operator ABI tests
         run: python -m unittest discover -s native -p 'test_*.py'
+      - name: Scalar Gemma INT8xINT4 C smoke test
+        run: |
+          cc -std=c11 -O2 -Wall -Wextra -I native native/gemma_int4_kernel.c native/test_gemma_int4_kernel.c -lm -o /tmp/gemma-int4-test
+          /tmp/gemma-int4-test
+      - name: AArch64 NEON Gemma INT8xINT4 smoke test
+        run: |
+          python -m ziglang cc -target aarch64-linux-musl -O2 -static -I native native/gemma_int4_kernel.c native/test_gemma_int4_kernel.c -lm -o /tmp/gemma-int4-arm64
+          qemu-aarch64-static /tmp/gemma-int4-arm64
       - name: C++ native probe compilation
         run: CXX=g++ sh bench/build.sh
       - name: Scalar path (x86-64)
