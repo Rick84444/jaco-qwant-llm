@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 199309L /* clock_gettime and CLOCK_MONOTONIC under -std=c11 */
 /*
  * acfq_kernel.c - activation-sparse GEMV over quantized weights.
  *
