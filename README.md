@@ -130,3 +130,27 @@ This repo is a model runtime COMPONENT, not the full JACO Cognitive Runtime.
 ## C++ Native Benchmark
 
 Build with `sh bench/build.sh`, then run `./bench/native_probe --port 11435 --reps 2 --predict 4` while the **existing** llama.cpp model server runs. This measures actual llama.cpp `/completion` token throughput; it does **not** accelerate GGML or ACFQ. See [benchmark instructions](bench/README.md).
+
+## Verified Gemma baseline and performance comparison
+
+On 2026-10-18, Gemma 4 E2B through LiteRT-LM (loopback port 9379) and
+JACO Model Runtime (loopback port 3131) returned a real answer to
+`2+2`: `2+2 är 4.`. This is the stable functional reference.
+**This does not mean inference is accelerated.** ACFQ has not been connected
+to LiteRT/Gemma kernels and must remain off for production inference.
+
+With both existing services running, compare direct and adapter calls:
+
+```sh
+cd ~/jaco-qwant-llm
+node bench/gemma-compare.mjs --repetitions 3
+```
+
+The script alternates the order of identical sequential HTTP requests to
+avoid competing model processes; it reports wall-clock timing, usage counts,
+and adapter overhead. It does not alter JACO services or model files.
+Check output length, prompt and completion token counts before inferring
+throughput differences. Establish a repeatable baseline before modifying any
+quantized tensor kernels. Real ACFQ integration requires a compatible tensor
+representation, numerical-equivalence tests, full-model quality validation,
+controlled end-to-end throughput comparison, and rollback on regressions.

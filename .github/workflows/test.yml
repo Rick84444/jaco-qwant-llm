@@ -10,6 +10,8 @@ jobs:
           node-version: "24"
       - name: Runtime contract tests
         run: node --test runtime/*.test.mjs
+      - name: Gemma A/B comparison contract tests
+        run: node --test bench/*.test.mjs
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
