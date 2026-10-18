@@ -166,3 +166,5 @@ running LiteRT server. A Python FFI call before inference cannot redirect
 compiled LiteRT operator execution into ACFQ. Enabling a real replacement
 requires identifying a supported custom operator/delegate interface,
 matching tensor types and layouts, and passing numerical and end-to-end tests.
+
+See [LiteRT source architecture review](research/README.md) for evidence-first native integration analysis.
