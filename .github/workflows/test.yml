@@ -1,0 +1,34 @@
+name: kernel-tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install tools
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q qemu-user-static
+          pip install numpy ziglang
+      - name: Scalar path (x86-64)
+        run: |
+          gcc -O2 -Wall -Wextra test_acfq.c -o test_acfq -lm
+          ./test_acfq
+      - name: NEON path (aarch64, qemu)
+        run: |
+          python -m ziglang cc -target aarch64-linux-musl -O2 -static test_acfq.c -o t_neon -lm
+          qemu-aarch64-static ./t_neon
+      - name: NEON + fp16 path (aarch64, qemu)
+        run: |
+          python -m ziglang cc -target aarch64-linux-musl -mcpu=cortex_a76 -O2 -static test_acfq.c -o t_fp16 -lm
+          qemu-aarch64-static ./t_fp16 | tee fp16.log
+          grep -q "fp16 arithmetic on" fp16.log
+      - name: Rig smoke run
+        run: |
+          gcc -O3 -shared -fPIC acfq_kernel.c -o libacfq.so -lm
+          gcc -O3 -shared -fPIC acf_kernel.c -o libacf_rig.so -lm
+          python acfq_rig.py --synthetic --K 256 --N 256 --tokens 64 --rounds 2 --reps 1
+          python acf_rig.py --synthetic --K 256 --N 256 --tokens 64 --reps 1
