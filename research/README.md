@@ -31,3 +31,24 @@ whole-model quality, throughput improvement over the same model baseline and
 a reversible opt-in. Python hooking around `create_conversation()` or merely
 loading `libacfq.so` does not satisfy this. Gemma LiteRT on port 9379 and
 JACO adapter on 3131 are never changed by this tool.
+
+## Native C++ review (second pass)
+
+This pass examines additional pinned LiteRT-LM native source files, creates
+per-question evidence references and reports precise missing proof. Each finding
+is a **candidate lexical location**, not a validated call graph or autonomous
+senior review. Missing upstream files are marked not-retrieved and never claimed
+as evidence.
+
+```sh
+python3 research/litert_native_review.py \\
+ --revision 73abd38c3a11a4fa9f3608ce4b5bdc9cdc18c6d6 --fetch \\
+ --native-library "$PREFIX/lib/python3.13/site-packages/litert_lm/liblitert-lm.so"
+python3 -m json.tool bench/litert-native-review.json
+```
+
+The library hash establishes a concrete installed binary identity, **not**
+source-version parity. An ACFQ native hook remains unverified until operator
+registration, layouts, numerical correctness, quality and comparative speed
+are proven. Running this tool does not modify or restart the working LiteRT
+and JACO processes. No active AI subagent is claimed.
