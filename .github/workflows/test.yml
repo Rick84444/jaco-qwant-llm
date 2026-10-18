@@ -34,6 +34,10 @@ jobs:
         run: |
           python -m ziglang cc -target aarch64-linux-musl -O2 -static -I native native/gemma_int4_kernel.c native/test_gemma_int4_kernel.c -lm -o /tmp/gemma-int4-arm64
           qemu-aarch64-static /tmp/gemma-int4-arm64
+      - name: INT8xINT4 benchmark smoke test (synthetic)
+        run: |
+          cc -std=c11 -O2 -Wall -Wextra -D_POSIX_C_SOURCE=200809L -I native native/gemma_int4_kernel.c native/bench_gemma_int4.c -lm -o /tmp/jaco-int4-bench
+          /tmp/jaco-int4-bench --quick --reps 2
       - name: C++ native probe compilation
         run: CXX=g++ sh bench/build.sh
       - name: Scalar path (x86-64)
