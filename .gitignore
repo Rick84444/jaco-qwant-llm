@@ -13,3 +13,8 @@ node_modules/
 .env
 
 bench/native_probe
+
+# Locally generated model inspection, never check in raw device reports
+bench/gemma-decode-fc.json
+bench/gemma-graph.json
+bench/gemma-install-probe.json
