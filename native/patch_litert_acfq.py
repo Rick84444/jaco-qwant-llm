@@ -20,10 +20,10 @@ TRACE_MARKER="JACO_ACFQ_DELEGATE_TRACE_V1"
 TRACE_BODY=r'''      // JACO_ACFQ_DELEGATE_TRACE_V1: opt-in aggregate graph observability.
       // Each count is measured AFTER the delegate modifies the interpreter.
       const char* jaco_trace=std::getenv("JACO_ACFQ_SHADOW");
-      if (jaco_trace && jaco_trace[0]=='1' && jaco_trace[1]=='\\0') {
+      if (jaco_trace && jaco_trace[0]=='1' && jaco_trace[1]=='\0') {
         std::fprintf(stderr,
             "JACO_ACFQ_SHADOW: delegate_applied=%s hardware_flags=%u "
-            "delegated_nodes=%d partitions=%d remaining_nodes=%d\\n",
+            "delegated_nodes=%d partitions=%d remaining_nodes=%d\n",
             accelerator_name,
             static_cast<unsigned>(accelerator_supported_hardware),
             delegated_ops, partitions, counts.undelegated_nodes);
@@ -32,10 +32,10 @@ TRACE_BODY=r'''      // JACO_ACFQ_DELEGATE_TRACE_V1: opt-in aggregate graph obse
 TRACE_FINAL=r'''  // JACO_ACFQ_DELEGATE_TRACE_V1: aggregate graph coverage, not a per-op proof.
   const char* jaco_trace_done=std::getenv("JACO_ACFQ_SHADOW");
   if (jaco_trace_done && jaco_trace_done[0]=='1' &&
-      jaco_trace_done[1]=='\\0') {
+      jaco_trace_done[1]=='\0') {
     std::fprintf(stderr,
         "JACO_ACFQ_SHADOW: delegation_complete=1 remaining_nodes=%d "
-        "cpu_delegated_nodes=%d total_nodes=%d\\n",
+        "cpu_delegated_nodes=%d total_nodes=%d\n",
         prev_counts.undelegated_nodes,cpu_delegated_node_count,
         compiled_model->delegation_metrics_.total_node_count);
   }
