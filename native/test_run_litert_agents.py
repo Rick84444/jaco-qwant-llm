@@ -58,6 +58,18 @@ class TestAgentRunner(unittest.TestCase):
         self.assertEqual(mocked.call_count, 2)
         self.assertEqual(len(digest), 64)
 
+    def test_repository_audit_has_sixteen_distinct_real_assignments(self):
+        jobs = json.loads(
+            (MODULE.parent / "repo_audit_missions.json").read_text()
+        )["missions"]
+        self.assertEqual([t["id"] for t in jobs],
+                         [f"{i:02d}" for i in range(1, 17)])
+        self.assertEqual(len({t["specialty"] for t in jobs}), 16)
+        for task in jobs:
+            prompt, hashes = runner.prompt_for(task)
+            self.assertLessEqual(len(prompt), runner.PROMPT_CHARS_LIMIT)
+            self.assertTrue(all(x["sha256"] is not None for x in hashes))
+
     def test_source_excerpts_have_grounded_line_numbers(self):
         excerpt, digest = runner.read_excerpt(
             "native/gemma_int4_kernel.c", max_chars=450)

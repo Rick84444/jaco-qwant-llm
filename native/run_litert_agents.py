@@ -286,6 +286,8 @@ def main():
                        help="make sixteen real local inference calls")
     group.add_argument("--dry-run", action="store_true",
                        help="validate jobs and inspect sources, no inference")
+    parser.add_argument("--audit-repo", action="store_true",
+                       help="run sixteen independent repository-quality reviews")
     parser.add_argument("--base-url", default="http://127.0.0.1:9379")
     parser.add_argument("--out", type=Path,
                         default=Path.home() / "jaco-litert-agent-reports")
@@ -295,8 +297,11 @@ def main():
     validated_local_base_url(args.base_url)
     if not (1 <= args.max_tokens <= 2048):
         parser.error("--max-tokens must be 1..2048")
-    source = HERE / "litert_agent_missions.json"
+    source = HERE / ("repo_audit_missions.json" if args.audit_repo else
+                     "litert_agent_missions.json")
     missions = json.loads(source.read_text(encoding="utf-8"))
+    if args.audit_repo and args.out == Path.home() / "jaco-litert-agent-reports":
+        args.out = Path.home() / "jaco-repo-audit-reports"
     entries = missions["missions"]
     ids = [item["id"] for item in entries]
     if len(entries) != 16 or len(set(ids)) != 16 or \

@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "title": "JACO repository audit — sixteen local, independent senior-specialist review tasks",
+  "claim": "Assignments execute only on explicit --audit-repo --run through the local Gemma API. They are sequential LLM calls, not autonomous GitHub writers or concurrent worker processes. Every claim needs human/reproducible evidence.",
+  "model": "gemma4-e2b",
+  "missions": [
+    {
+      "id": "01",
+      "specialty": "Arkitektur och ansvar",
+      "assignment": "Rita komponentgränserna och identifiera duplicerat runtime-ansvar, oavsiktliga sidoberoenden samt en enda konkret korrigering.",
+      "sources": [
+        "runtime/provider.mjs",
+        "runtime/server.mjs"
+      ],
+      "required_output": "Decision: BUG_CONFIRMED / NEEDS_EVIDENCE / NO_ISSUE_SEEN. Quote a concrete, visible source line number and exact failure condition. Include one minimal test to falsify the claim. Avoid running commands or claiming a fix was implemented."
+    },
+    {
+      "id": "02",
+      "specialty": "HTTP och åtkomstkontroll",
+      "assignment": "Granska loopback-host, CORS/origin, content-type samt eventuella sätt för webbsidor att orsaka oavsiktlig inferens.",
+      "sources": [
+        "runtime/server.mjs",
+        "runtime/runtime.test.mjs"
+      ],
+      "required_output": "Decision: BUG_CONFIRMED / NEEDS_EVIDENCE / NO_ISSUE_SEEN. Quote a concrete, visible source line number and exact failure condition. Include one minimal test to falsify the claim. Avoid running commands or claiming a fix was implemented."
+    },
+    {
+      "id": "03",
+      "specialty": "Timeout och cancellation",
+      "assignment": "Spåra timeout, signal-composition, klientstängning och upstream strömningsfel; identifiera ett reproducerbart race.",
+      "sources": [
+        "runtime/provider.mjs",
+        "runtime/server.mjs"
+      ],
+      "required_output": "Decision: BUG_CONFIRMED / NEEDS_EVIDENCE / NO_ISSUE_SEEN. Quote a concrete, visible source line number and exact failure condition. Include one minimal test to falsify the claim. Avoid running commands or claiming a fix was implemented."
+    },
+    {
+      "id": "04",
+      "specialty": "Datakontrakt och felstatus",
+      "assignment": "Granska modellval, JSON-schema, feltyper, upstream-status och health readiness; peka på en edge case.",
+      "sources": [
+        "runtime/provider.mjs",
+        "runtime/runtime.test.mjs"
+      ],
+      "required_output": "Decision: BUG_CONFIRMED / NEEDS_EVIDENCE / NO_ISSUE_SEEN. Quote a concrete, visible source line number and exact failure condition. Include one minimal test to falsify the claim. Avoid running commands or claiming a fix was implemented."
+    },
+    {
+      "id": "05",
+      "specialty": "Termux och distributionsgräns",
+      "assignment": "Granska distributionssteg och verifiera att testverktygen inte muterar Gemma-servern eller modellvikter.",
+      "sources": [
+        "native/probe_litert_lm_android.py",
+        "README.md"
+      ],
+      "required_output": "Decision: BUG_CONFIRMED / NEEDS_EVIDENCE / NO_ISSUE_SEEN. Quote a concrete, visible source line number and exact failure condition. Include one minimal test to falsify the claim. Avoid running commands or claiming a fix was implemented."
+    },
+    {
+      "id": "06",
+      "specialty": "Promptgräns och källintegritet",
+      "assignment": "Granska radnumrering, källhash, prompttrunkering och skydd mot instruktioner i källkodstext.",
+      "sources": [
+        "native/run_litert_agents.py",
+        "native/test_run_litert_agents.py"
+      ],
+      "required_output": "Decision: BUG_CONFIRMED / NEEDS_EVIDENCE / NO_ISSUE_SEEN. Quote a concrete, visible source line number and exact failure condition. Include one minimal test to falsify the claim. Avoid running commands or claiming a fix was implemented."
+    },
+    {
+      "id": "07",
+      "specialty": "Rapportlagring och rollback",
+      "assignment": "Granska stale/verified-status, symlinkkontroll, transaktionsskrivning och säker backup vid force.",
+      "sources": [
+        "native/run_litert_agents.py",
+        "native/test_run_litert_agents.py"
+      ],
+      "required_output": "Decision: BUG_CONFIRMED / NEEDS_EVIDENCE / NO_ISSUE_SEEN. Quote a concrete, visible source line number and exact failure condition. Include one minimal test to falsify the claim. Avoid running commands or claiming a fix was implemented."
+    },
+    {
+      "id": "08",
+      "specialty": "Patchbarhet och idempotens",
+      "assignment": "Granska källankare, äldre uppströmsrevisioner, dubbla patchar och fail-closed-kriterier.",
+      "sources": [
+        "native/patch_litert_acfq.py",
+        "native/test_patch_litert_acfq_trace.py"
+      ],
+      "required_output": "Decision: BUG_CONFIRMED / NEEDS_EVIDENCE / NO_ISSUE_SEEN. Quote a concrete, visible source line number and exact failure condition. Include one minimal test to falsify the claim. Avoid running commands or claiming a fix was implemented."
+    },
+    {
+      "id": "09",
+      "specialty": "Källproveniens",
+      "assignment": "Kontrollera pinning, git-visad originalkälla, kontrollsummor, isolerat checkout och uppdateringssäkerhet.",
+      "sources": [
+        "native/setup_litert_acfq_source.sh",
+        "native/refresh_litert_acfq_source.py"
+      ],
+      "required_output": "Decision: BUG_CONFIRMED / NEEDS_EVIDENCE / NO_ISSUE_SEEN. Quote a concrete, visible source line number and exact failure condition. Include one minimal test to falsify the claim. Avoid running commands or claiming a fix was implemented."
+    },
+    {
+      "id": "10",
+      "specialty": "C och C++ ABI",
+      "assignment": "Granska originaloperatorns kontrakt, livslängd för tensorpekare, typantaganden och vad smoke-testet INTE bevisar.",
+      "sources": [
+        "native/litert_acfq_shadow.h",
+        "native/test_litert_acfq_real_abi.cc"
+      ],
+      "required_output": "Decision: BUG_CONFIRMED / NEEDS_EVIDENCE / NO_ISSUE_SEEN. Quote a concrete, visible source line number and exact failure condition. Include one minimal test to falsify the claim. Avoid running commands or claiming a fix was implemented."
+    },
+    {
+      "id": "11",
+      "specialty": "INT8×INT4 matematik",
+      "assignment": "Granska signed nibble, zero-points, skalor, accumulation, bias och gränsfall utan att anta faktisk Gemma-paritet.",
+      "sources": [
+        "native/gemma_int4_kernel.c",
+        "native/test_gemma_int4_kernel.c"
+      ],
+      "required_output": "Decision: BUG_CONFIRMED / NEEDS_EVIDENCE / NO_ISSUE_SEEN. Quote a concrete, visible source line number and exact failure condition. Include one minimal test to falsify the claim. Avoid running commands or claiming a fix was implemented."
+    },
+    {
+      "id": "12",
+      "specialty": "Modelldatans kvantisering",
+      "assignment": "Verifiera vilka faktiska metadata som finns dokumenterade och identifiera antaganden om vikters packning.",
+      "sources": [
+        "native/gemma_decode_fc.py",
+        "evidence/gemma4-e2b-decode-observed.json"
+      ],
+      "required_output": "Decision: BUG_CONFIRMED / NEEDS_EVIDENCE / NO_ISSUE_SEEN. Quote a concrete, visible source line number and exact failure condition. Include one minimal test to falsify the claim. Avoid running commands or claiming a fix was implemented."
+    },
+    {
+      "id": "13",
+      "specialty": "ARM64 prestanda och numerik",
+      "assignment": "Granska NEON-lanernas korrekthet och om publicerad hastighet jämför mot relevant optimerad baslinje.",
+      "sources": [
+        "native/gemma_int4_kernel.c",
+        "native/GEMMA_INT4_BENCHMARK.md"
+      ],
+      "required_output": "Decision: BUG_CONFIRMED / NEEDS_EVIDENCE / NO_ISSUE_SEEN. Quote a concrete, visible source line number and exact failure condition. Include one minimal test to falsify the claim. Avoid running commands or claiming a fix was implemented."
+    },
+    {
+      "id": "14",
+      "specialty": "Byggkedjan",
+      "assignment": "Granska exakt uppströms SHA, CMake-beroenden och skillnaden mellan liblitert_runtime och körbar LiteRT-LM.",
+      "sources": [
+        ".github/workflows/litert-real-build.yml",
+        "native/LITERT_ACFQ_INTEGRATION.md"
+      ],
+      "required_output": "Decision: BUG_CONFIRMED / NEEDS_EVIDENCE / NO_ISSUE_SEEN. Quote a concrete, visible source line number and exact failure condition. Include one minimal test to falsify the claim. Avoid running commands or claiming a fix was implemented."
+    },
+    {
+      "id": "15",
+      "specialty": "CI och reproducerbarhet",
+      "assignment": "Hitta tester som bara validerar fake stubs och föreslå en lågkostnadsintegrationstest med falsifieringsvillkor.",
+      "sources": [
+        ".github/workflows/test.yml",
+        "native/verify_litert_abi.sh"
+      ],
+      "required_output": "Decision: BUG_CONFIRMED / NEEDS_EVIDENCE / NO_ISSUE_SEEN. Quote a concrete, visible source line number and exact failure condition. Include one minimal test to falsify the claim. Avoid running commands or claiming a fix was implemented."
+    },
+    {
+      "id": "16",
+      "specialty": "Bevis och release gate",
+      "assignment": "Definiera kriterier för riktig modellinferens, noll dataförlust, rollback, säker A/B och explicit stoppregel.",
+      "sources": [
+        "native/FINAL_LITERT_MISSIONS.md",
+        "native/ANDROID_RUNTIME_PROVENANCE.md"
+      ],
+      "required_output": "Decision: BUG_CONFIRMED / NEEDS_EVIDENCE / NO_ISSUE_SEEN. Quote a concrete, visible source line number and exact failure condition. Include one minimal test to falsify the claim. Avoid running commands or claiming a fix was implemented."
+    }
+  ]
+}
