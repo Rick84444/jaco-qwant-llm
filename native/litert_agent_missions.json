@@ -119,7 +119,7 @@
       "specialty": "Delegate interception",
       "assignment": "Investigate XNNPACK/YNNPACK bypass risk and what runtime observation would prove wrapper callbacks actually run.",
       "sources": [
-        "upstream:litert/runtime/compiled_model.cc@500:790",
+        "upstream:litert/runtime/compiled_model.cc@1110:1220",
         "native/LITERT_ACFQ_INTEGRATION.md"
       ],
       "required_output": "Decision: POSSIBLE/BLOCKED/NEEDS_EVIDENCE. Evidence: exact source location. One minimal, falsifiable experiment or patch suggestion. Risks. Unknowns."
@@ -129,7 +129,7 @@
       "specialty": "GPU route",
       "assignment": "Analyze whether the installed GPU-enabled model could bypass CPU builtin hook. Give a falsifiable on-device observation.",
       "sources": [
-        "upstream:litert/runtime/compiled_model.cc@500:790",
+        "upstream:litert/runtime/compiled_model.cc@1070:1220",
         "native/LITERT_ACFQ_INTEGRATION.md"
       ],
       "required_output": "Decision: POSSIBLE/BLOCKED/NEEDS_EVIDENCE. Evidence: exact source location. One minimal, falsifiable experiment or patch suggestion. Risks. Unknowns."

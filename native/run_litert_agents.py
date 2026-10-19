@@ -20,7 +20,11 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 UPSTREAM = Path.home() / "jaco-litert-acfq-source"
 
-def read_excerpt(spec, max_chars=6500):
+# Conservative character cap: source code often tokenizes less compactly than prose.
+SOURCE_CHARS_DEFAULT = 1200
+PROMPT_CHARS_LIMIT = 3600
+
+def read_excerpt(spec, max_chars=SOURCE_CHARS_DEFAULT):
     if spec.startswith("upstream:"):
         relative = spec.removeprefix("upstream:")
         root = UPSTREAM
@@ -45,13 +49,19 @@ def read_excerpt(spec, max_chars=6500):
             if a <= i <= b
         )
     digest = hashlib.sha256(source.encode()).hexdigest()
-    return (f"SOURCE {spec} sha256={digest}\n{source[:max_chars]}", digest)
+    # Include both entry and exit conditions for long code ranges, so
+    # tail branches (delegate installation, return status) remain visible.
+    if len(source) > max_chars:
+        head = max_chars * 2 // 3
+        tail = max_chars - head
+        source = source[:head] + "\n... [SOURCE TRUNCATED] ...\n" + source[-tail:]
+    return (f"SOURCE {spec} sha256={digest}\n{source}", digest)
 
-def prompt_for(mission):
+def prompt_for(mission, max_chars=SOURCE_CHARS_DEFAULT):
     snippets = []
     hashes = []
     for s in mission["sources"]:
-        excerpt, digest = read_excerpt(s)
+        excerpt, digest = read_excerpt(s, max_chars=max_chars)
         snippets.append(excerpt)
         hashes.append({"path": s, "sha256": digest})
     prefix = (
@@ -63,12 +73,15 @@ def prompt_for(mission):
         "Respond in Swedish, compact, using headings: BESLUT, BELÄGG, "
         "EXPERIMENT, RISKER, OSÄKERT. No invented measurements.\n\n"
     )
-    return (
+    prompt = (
         prefix + f"MOTION {mission['id']} — {mission['specialty']}\n"
         + mission["assignment"] + "\n\n"
         + mission["required_output"] + "\n\n"
         + "\n\n---\n\n".join(snippets)
-    ), hashes
+    )
+    if len(prompt) > PROMPT_CHARS_LIMIT:
+        raise ValueError(f"prompt exceeds safe character budget: {len(prompt)}")
+    return prompt, hashes
 
 def http_json(url, payload=None, timeout=180):
     headers = {"Content-Type": "application/json"}
@@ -77,6 +90,36 @@ def http_json(url, payload=None, timeout=180):
                                  method="POST" if data is not None else "GET")
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return json.load(resp)
+
+def chat_with_retry(mission, model, base_url, max_tokens):
+    """Recover exclusively from LiteRT's input-length error, never other 500s."""
+    last_error = None
+    for limit in (SOURCE_CHARS_DEFAULT, 750, 350):
+        prompt, hashes = prompt_for(mission, max_chars=limit)
+        request_hash = hashlib.sha256(prompt.encode()).hexdigest()
+        payload = {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": max_tokens,
+            "stream": False
+        }
+        try:
+            response = http_json(base_url.rstrip("/") + "/v1/chat/completions",
+                                 payload=payload)
+            return response, hashes, request_hash, limit
+        except urllib.error.HTTPError as exc:
+            body = exc.read(4096).decode("utf-8", errors="replace")
+            last_error = exc
+            if exc.code != 500 or not (
+                "Input token ids are too long" in body or
+                "Exceeding the maximum number of tokens allowed" in body
+            ):
+                raise RuntimeError(f"HTTP {exc.code}: {body[:500]}") from exc
+            print(f"  Context length exceeded at source budget {limit}; "
+                  "retrying with less source", flush=True)
+    raise RuntimeError("Gemma input context rejected all three bounded "
+                       "source budgets") from last_error
+
 
 def run(missions, base_url, out_dir, max_tokens, force=False):
     model_url = base_url.rstrip("/") + "/v1/models"
@@ -94,18 +137,11 @@ def run(missions, base_url, out_dir, max_tokens, force=False):
             print(f"[{mid}/16] SKIP existing: {report}", flush=True)
             results.append({"id": mid, "status": "skipped", "report": str(report)})
             continue
-        prompt, hashes = prompt_for(mission)
-        request_hash = hashlib.sha256(prompt.encode()).hexdigest()
         print(f"[{mid}/16] REVIEW {mission['specialty']}", flush=True)
-        payload = {
-            "model": model,
-            "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": max_tokens,
-            "stream": False
-        }
         try:
-            response = http_json(base_url.rstrip("/") + "/v1/chat/completions",
-                                 payload=payload)
+            response, hashes, request_hash, source_budget = chat_with_retry(
+                mission, model, base_url, max_tokens
+            )
             content = response["choices"][0]["message"]["content"]
             if not isinstance(content, str) or not content.strip():
                 raise ValueError("model returned no text")
@@ -118,7 +154,8 @@ def run(missions, base_url, out_dir, max_tokens, force=False):
             report.write_text(header + content + "\n", encoding="utf-8")
             results.append({"id": mid, "status": "review_produced",
                             "report": str(report), "request_sha256": request_hash,
-                            "source_hashes": hashes})
+                            "source_hashes": hashes,
+                            "source_char_budget": source_budget})
         except (urllib.error.URLError, ValueError, KeyError, TimeoutError,
                 OSError) as exc:
             print(f"[{mid}/16] ERROR: {exc}", file=sys.stderr, flush=True)
@@ -159,8 +196,10 @@ def main():
         for item in entries:
             _, hashes = prompt_for(item)
             missing = [h["path"] for h in hashes if h["sha256"] is None]
+            prompt, _ = prompt_for(item)
             print(f"{item['id']} {item['specialty']} "
-                  f"sources={len(hashes)} missing={len(missing)}")
+                  f"sources={len(hashes)} missing={len(missing)} "
+                  f"prompt_chars={len(prompt)}/{PROMPT_CHARS_LIMIT}")
         print("DRY RUN PASS: no model called and no files written")
         return 0
     return run(missions, args.base_url, args.out, args.max_tokens, args.force)
