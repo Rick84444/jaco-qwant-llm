@@ -74,3 +74,7 @@ unchanged and the ACFQ invocation was logged.
 This does **not** constitute upstream LiteRT ABI compilation or a Gemma
 integration proof. An isolated build against the real LiteRT headers and
 then real Gemma runtime execution are still required.
+
+The wrapper imports `tflite/core/kernels/builtin_op_kernels.h` for
+`Register_FULLY_CONNECTED()` (the generic resolver header alone does not
+declare individual builtin registration functions).
