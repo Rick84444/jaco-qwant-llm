@@ -71,6 +71,9 @@ jobs:
           python3 native/patch_litert_acfq.py --litert-root "$root" --apply
           grep -q JACO_ACFQ_SHADOW_SOURCE_PATCH_V1 "$root/litert/runtime/compiled_model.cc"
           grep -q 'jaco_acfq::ShadowRegistration' "$root/litert/runtime/compiled_model.cc"
+          grep -q JACO_ACFQ_DELEGATE_TRACE_V1 "$root/litert/runtime/compiled_model.cc"
+          grep -q 'JACO_ACFQ_SHADOW: delegation_complete=1' "$root/litert/runtime/compiled_model.cc"
+          grep -q 'JACO_ACFQ_SHADOW: delegate_applied=' "$root/litert/runtime/compiled_model.cc"
           test -f "$root/litert/runtime/compiled_model.cc.jaco-original"
           test -f "$root/litert/runtime/jaco_acfq_native/gemma_int4_kernel.c"
       - name: C++ native probe compilation

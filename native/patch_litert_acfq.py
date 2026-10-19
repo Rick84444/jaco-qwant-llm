@@ -14,6 +14,33 @@ from pathlib import Path
 
 MARKER="JACO_ACFQ_SHADOW_SOURCE_PATCH_V1"
 ENTRY='  tflite::InterpreterOptions interpreter_options;'
+DELEGATE_ENTRY='      prev_counts = counts;'
+DELEGATE_END_ENTRY='  compiled_model->CheckCpuTensors();'
+TRACE_MARKER="JACO_ACFQ_DELEGATE_TRACE_V1"
+TRACE_BODY=r'''      // JACO_ACFQ_DELEGATE_TRACE_V1: opt-in aggregate graph observability.
+      // Each count is measured AFTER the delegate modifies the interpreter.
+      const char* jaco_trace=std::getenv("JACO_ACFQ_SHADOW");
+      if (jaco_trace && jaco_trace[0]=='1' && jaco_trace[1]=='\\0') {
+        std::fprintf(stderr,
+            "JACO_ACFQ_SHADOW: delegate_applied=%s hardware_flags=%u "
+            "delegated_nodes=%d partitions=%d remaining_nodes=%d\\n",
+            accelerator_name,
+            static_cast<unsigned>(accelerator_supported_hardware),
+            delegated_ops, partitions, counts.undelegated_nodes);
+      }
+'''
+TRACE_FINAL=r'''  // JACO_ACFQ_DELEGATE_TRACE_V1: aggregate graph coverage, not a per-op proof.
+  const char* jaco_trace_done=std::getenv("JACO_ACFQ_SHADOW");
+  if (jaco_trace_done && jaco_trace_done[0]=='1' &&
+      jaco_trace_done[1]=='\\0') {
+    std::fprintf(stderr,
+        "JACO_ACFQ_SHADOW: delegation_complete=1 remaining_nodes=%d "
+        "cpu_delegated_nodes=%d total_nodes=%d\\n",
+        prev_counts.undelegated_nodes,cpu_delegated_node_count,
+        compiled_model->delegation_metrics_.total_node_count);
+  }
+'''
+
 INCLUDES='#include "litert/runtime/jaco_acfq_shadow.h"\nextern "C" {\n#include "litert/runtime/jaco_acfq_native/gemma_int4_kernel.c"\n}\n'
 HOOK=f"""  // {MARKER}: optional CPU-only Builtin FullyConnected shadow.
 #if !defined(LITERT_NO_BUILTIN_OPS)
@@ -39,10 +66,16 @@ def apply_patch(source):
     # The patch is inserted before interpreter creation, after resolver setup.
     if 'resolver->AddCustom' not in source or 'ModifyGraphWithDelegate' not in source:
         raise PatchError("not a compatible LiteRT compiled model implementation")
+    if source.count(DELEGATE_ENTRY)!=1 or source.count(DELEGATE_END_ENTRY)!=1:
+        raise PatchError("LiteRT delegate graph layout unknown; refusing patch")
     pos=source.find('#include ')
     if pos<0:raise PatchError("missing include block")
     source=source[:pos]+INCLUDES+source[pos:]
     source=source.replace(ENTRY,HOOK+ENTRY)
+    # Register per-accelerator graph-coverage diagnostics after the original
+    # ModifyGraphWithDelegate and GetGraphCounts call. Never influence routing.
+    source=source.replace(DELEGATE_ENTRY,DELEGATE_ENTRY+'\n'+TRACE_BODY)
+    source=source.replace(DELEGATE_END_ENTRY,TRACE_FINAL+DELEGATE_END_ENTRY)
     return source,True
 
 def main():

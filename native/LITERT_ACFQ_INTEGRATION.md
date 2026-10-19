@@ -117,3 +117,31 @@ be directly linked into the existing Python wheel. Building/patching the
 backend independently, producing an Android-compatible shared library
 and connecting it to LiteRT-LM remain unsolved. Do not start a superbuild
 on a 18 GiB free device without estimating dependency disk use.
+
+## Delegate coverage: review of local mission 13 (2026-10-19)
+
+Mission 13 correctly suggested that GPU or CPU delegation can bypass the
+TFLite builtin FULLY_CONNECTED callback, but did not establish which backend
+handles Gemma 4 E2B. It incorrectly treated lines 1135-1138 as a possible
+GPU-priority switch; they are a JIT gate. The meaningful handoff is the
+`ModifyGraphWithDelegate` call at upstream compiled_model.cc 1197-1199.
+
+The opt-in source patch now records aggregate node-coverage evidence from
+`GetGraphCounts()` immediately after each delegate application:
+
+- `JACO_ACFQ_SHADOW: delegate_applied=... delegated_nodes=... remaining_nodes=...`
+- `JACO_ACFQ_SHADOW: delegation_complete=1 ...`
+- `JACO_ACFQ_SHADOW: builtin_callback_invoked=1 ...` (when the CPU builtin
+  operator callback actually runs, diagnostic trace bounded to 8 calls)
+- `JACO_ACFQ_SHADOW: native_invocations=1 ...` (only if the native kernel
+  actually executes).
+
+These logs are enabled only in a **separately rebuilt LiteRT process** with
+`JACO_ACFQ_SHADOW=1`; neither the production Termux model server nor GPU
+priority is modified. Aggregate delegated-node counts alone do not prove
+whether any specific FullyConnected node was CPU or GPU delegated. Even a
+successful callback is not a speedup or full numerical-parity proof.
+
+The user-created sparse patched checkout remains pinned to its earlier
+snapshot. Updating this repository does not magically rebuild the installed
+LiteRT-LM wheel or retroactively inject these diagnostics into that checkout.
