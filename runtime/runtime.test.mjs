@@ -178,3 +178,35 @@ test("localhost chat API refuses browser-simple and cross-origin requests", asyn
   }
 });
 
+
+test("model adapter rejects DNS-rebinding HTTP Host on every endpoint", async () => {
+  const app = createRuntimeServer(configFromEnv({
+    JACO_MODEL_BASE_URL: "http://127.0.0.1:9379/v1",
+    JACO_MODEL_ID: "gemma4-e2b"
+  }));
+  app.listen(0, "127.0.0.1");
+  await once(app, "listening");
+  const port = app.address().port;
+  try {
+    for (const route of ["/health", "/capabilities", "/v1/models",
+                          "/v1/chat/completions"]) {
+      const r = await new Promise((resolve, reject) => {
+        const req = http.request({
+          hostname: "127.0.0.1", port,
+          method: route.endsWith("/completions") ? "POST" : "GET",
+          path: route,
+          headers: { Host: "attacker.example:" + port,
+                     "content-type": "application/json" }
+        }, res => {
+          res.resume();
+          res.on("end", () => resolve(res.statusCode));
+        });
+        req.on("error", reject);
+        req.end(route.endsWith("/completions") ? "{}" : undefined);
+      });
+      assert.equal(r, 403);
+    }
+  } finally {
+    await new Promise(done => app.close(done));
+  }
+});

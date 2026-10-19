@@ -31,6 +31,13 @@ async function parseBody(req) {
 }
 export function createRuntimeServer(config = configFromEnv(), fetchImpl = fetch) {
   return http.createServer(async (req, res) => {
+    // Reject DNS-rebinding and forged HTTP Host headers on all routes.
+    // CORS checks alone cannot stop a page whose domain resolves to loopback.
+    let targetHost = "";
+    try { targetHost = new URL("http://" + (req.headers.host || "")).hostname; }
+    catch { /* reject below */ }
+    if (!["127.0.0.1", "localhost"].includes(targetHost))
+      return json(res, 403, { error: { message: "Loopback Host required" } });
     const path = (req.url || "").split("?")[0];
     if (req.method === "GET" && path === "/capabilities") return json(res, 200, capabilities());
     if (req.method === "GET" && path === "/health") {
