@@ -44,6 +44,7 @@ jobs:
           c++ -std=c++17 -O2 -Wall -Wextra -I native/shadow_stubs -I native native/test_litert_acfq_shadow.cc /tmp/gemma-int4.o -lm -o /tmp/jaco-litert-shadow-check
           /tmp/jaco-litert-shadow-check 2>&1 | tee /tmp/jaco-litert-shadow-test.log
           grep -q "JACO_ACFQ_SHADOW: native_invocations=1" /tmp/jaco-litert-shadow-test.log
+          grep -q "JACO_ACFQ_SHADOW: builtin_callback_invoked=1" /tmp/jaco-litert-shadow-test.log
           grep -q "JACO shadow smoke PASS" /tmp/jaco-litert-shadow-test.log
       - name: Authentic pinned LiteRT C ABI smoke (not linked runtime)
         env:

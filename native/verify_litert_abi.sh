@@ -46,5 +46,7 @@ cp "$REPO/native/gemma_int4_kernel.h" \
 "$WORK/real-abi" > "$WORK/results.log" 2>&1
 cat "$WORK/results.log"
 grep -q 'JACO_ACFQ_SHADOW: native_invocations=1' "$WORK/results.log"
+grep -q 'JACO_ACFQ_SHADOW: builtin_callback_invoked=1 invocation=1' "$WORK/results.log"
+grep -q 'JACO_ACFQ_SHADOW: builtin_callback_invoked=1 invocation=2' "$WORK/results.log"
 grep -q 'JACO real-header ABI PASS' "$WORK/results.log"
 echo 'PASS: authentic upstream TFLite ABI; no runtime/Gemma integration claimed'

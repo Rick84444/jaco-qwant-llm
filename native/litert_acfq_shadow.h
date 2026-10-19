@@ -36,17 +36,39 @@ inline bool Elements(const TfLiteTensor* t, int64_t* count) {
 }
 
 inline TfLiteStatus ShadowFullyConnected(TfLiteContext* ctx, TfLiteNode* node) {
+  static std::atomic<uint64_t> attempted{0};
+  const uint64_t invocation=attempted.fetch_add(1, std::memory_order_relaxed)+1;
   const TfLiteRegistration* builtin = tflite::ops::builtin::Register_FULLY_CONNECTED();
   if(!builtin || !builtin->invoke) return kTfLiteError;
-  // Original TFLite logic always owns the actual inference output.
+  // The original callback owns output. Bounded diagnostics distinguish
+  // no callback invocation from a callback whose tensors were ineligible.
   TfLiteStatus result=builtin->invoke(ctx,node);
+  if(invocation<=8) {
+    const TfLiteTensor* in=nullptr;
+    const TfLiteTensor* w=nullptr;
+    const TfLiteTensor* out=nullptr;
+    if(node && node->inputs && node->inputs->size>=2) {
+      in=Tensor(ctx,node->inputs->data[0]);
+      w=Tensor(ctx,node->inputs->data[1]);
+    }
+    if(node && node->outputs && node->outputs->size>=1)
+      out=Tensor(ctx,node->outputs->data[0]);
+    const int rows=(w && w->dims && w->dims->size==2) ? w->dims->data[0] : -1;
+    const int cols=(w && w->dims && w->dims->size==2) ? w->dims->data[1] : -1;
+    std::fprintf(stderr,
+        "JACO_ACFQ_SHADOW: builtin_callback_invoked=1 invocation=%llu "
+        "original_status=%d input_type=%d weights_type=%d output_type=%d "
+        "weight_rows=%d weight_cols=%d native_acceleration_claim=0\n",
+        static_cast<unsigned long long>(invocation),static_cast<int>(result),
+        in ? static_cast<int>(in->type) : -1,
+        w ? static_cast<int>(w->type) : -1,
+        out ? static_cast<int>(out->type) : -1,rows,cols);
+  }
   if(result!=kTfLiteOk) return result;
 
-  static std::atomic<uint64_t> attempted{0};
   static std::atomic<uint64_t> eligible{0};
   static std::atomic<uint64_t> native_calls{0};
   // Bounded default overhead: only the first eligible operation in-process.
-  ++attempted;
   if(!node || !node->inputs || node->inputs->size<2 || !node->outputs ||
      node->outputs->size!=1) return result;
   const TfLiteTensor* input=Tensor(ctx,node->inputs->data[0]);

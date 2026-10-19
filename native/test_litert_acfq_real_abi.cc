@@ -71,6 +71,11 @@ int main() {
   assert(registration->invoke(&ctx,&node)==kTfLiteOk);
   assert(original_calls==1);
   for(int i=0;i<N;++i)assert(output[i]==17);
+  // An ineligible tensor still invokes the original callback successfully.
+  tensors[1].type=kTfLiteFloat32;
+  assert(registration->invoke(&ctx,&node)==kTfLiteOk);
+  assert(original_calls==2);
+  for(int i=0;i<N;++i)assert(output[i]==17);
   std::puts("JACO real-header ABI PASS: authentic TFLite structs; original output preserved");
   std::free(in_shape);std::free(w_shape);std::free(out_shape);
   std::free(scales);std::free(zeros);std::free(indices);std::free(results);
