@@ -30,6 +30,18 @@ jobs:
         run: |
           cc -std=c11 -O2 -Wall -Wextra -I native native/gemma_int4_kernel.c native/test_gemma_int4_kernel.c -lm -o /tmp/gemma-int4-test
           /tmp/gemma-int4-test
+      - name: Native memory safety and undefined-behavior tests (ASan + UBSan)
+        run: |
+          set -euo pipefail
+          cc -std=c11 -O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined \
+            -fno-sanitize-recover=all -I native \
+            native/gemma_int4_kernel.c native/test_gemma_int4_kernel.c \
+            -lm -o /tmp/jaco-gemma-int4-sanitized
+          ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 /tmp/jaco-gemma-int4-sanitized
+          cc -std=c11 -O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined \
+            -fno-sanitize-recover=all test_acfq.c \
+            -lm -o /tmp/jaco-acfq-sanitized
+          ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 /tmp/jaco-acfq-sanitized
       - name: AArch64 NEON Gemma INT8xINT4 smoke test
         run: |
           python -m ziglang cc -target aarch64-linux-musl -O2 -static -I native native/gemma_int4_kernel.c native/test_gemma_int4_kernel.c -lm -o /tmp/gemma-int4-arm64
