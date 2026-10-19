@@ -44,7 +44,7 @@ jobs:
             -DLITERT_ENABLE_GPU=OFF -DLITERT_ENABLE_NPU=OFF \
             -DLITERT_DISABLE_KLEIDIAI=ON \
             -DLITERT_BUILD_TESTS=OFF \
-            -DTFLITE_ENABLE_XNNPACK=OFF \
+            -DTFLITE_ENABLE_XNNPACK=ON \
             2>&1 | tee "$GITHUB_WORKSPACE/litert-configure.log"
       - name: Build patched official LiteRT runtime target
         timeout-minutes: 22
