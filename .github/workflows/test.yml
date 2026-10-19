@@ -45,6 +45,21 @@ jobs:
           /tmp/jaco-litert-shadow-check 2>&1 | tee /tmp/jaco-litert-shadow-test.log
           grep -q "JACO_ACFQ_SHADOW: native_invocations=1" /tmp/jaco-litert-shadow-test.log
           grep -q "JACO shadow smoke PASS" /tmp/jaco-litert-shadow-test.log
+      - name: Isolated LiteRT source patch integration smoke (pinned upstream)
+        run: |
+          set -e
+          root=/tmp/jaco-litert-isolated
+          mkdir -p "$root/litert/runtime" "$root/tflite/core/c"
+          curl --fail --silent --show-error --location --retry 2 \
+            https://raw.githubusercontent.com/google-ai-edge/LiteRT/44455548be35bde21737b8a28ef0d027632c282d/litert/runtime/compiled_model.cc \
+            -o "$root/litert/runtime/compiled_model.cc"
+          touch "$root/tflite/core/c/common.h"
+          python3 native/patch_litert_acfq.py --litert-root "$root" --check
+          python3 native/patch_litert_acfq.py --litert-root "$root" --apply
+          grep -q JACO_ACFQ_SHADOW_SOURCE_PATCH_V1 "$root/litert/runtime/compiled_model.cc"
+          grep -q 'jaco_acfq::ShadowRegistration' "$root/litert/runtime/compiled_model.cc"
+          test -f "$root/litert/runtime/compiled_model.cc.jaco-original"
+          test -f "$root/litert/runtime/jaco_acfq_native/gemma_int4_kernel.c"
       - name: C++ native probe compilation
         run: CXX=g++ sh bench/build.sh
       - name: Scalar path (x86-64)

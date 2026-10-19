@@ -78,3 +78,13 @@ then real Gemma runtime execution are still required.
 The wrapper imports `tflite/core/kernels/builtin_op_kernels.h` for
 `Register_FULLY_CONNECTED()` (the generic resolver header alone does not
 declare individual builtin registration functions).
+
+## Pinned upstream source-compatibility smoke test
+
+CI downloads only the public `litert/runtime/compiled_model.cc` from LiteRT
+commit `44455548be35bde21737b8a28ef0d027632c282d` into a disposable
+directory, runs the patcher in check/apply mode, and verifies the inserted
+C++ hook and untouched-source backup. This is deliberately **not** an
+upstream build, inference test, or compatibility guarantee for other LiteRT
+revisions. Full dependencies and library build are not downloaded in this
+smoke test.
