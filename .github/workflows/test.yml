@@ -45,6 +45,10 @@ jobs:
           /tmp/jaco-litert-shadow-check 2>&1 | tee /tmp/jaco-litert-shadow-test.log
           grep -q "JACO_ACFQ_SHADOW: native_invocations=1" /tmp/jaco-litert-shadow-test.log
           grep -q "JACO shadow smoke PASS" /tmp/jaco-litert-shadow-test.log
+      - name: Authentic pinned LiteRT C ABI smoke (not linked runtime)
+        env:
+          JACO_LITERT_ABI_SOURCE_MODE: download
+        run: bash native/verify_litert_abi.sh
       - name: Android isolated source setup syntax validation
         run: |
           bash -n native/setup_litert_acfq_source.sh

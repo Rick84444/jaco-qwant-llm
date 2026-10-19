@@ -14,7 +14,6 @@
 #include <limits>
 #include <vector>
 #include "tflite/core/c/common.h"
-#include "tflite/core/kernels/register.h"
 #include "tflite/core/kernels/builtin_op_kernels.h"
 #include "litert/runtime/jaco_acfq_native/gemma_int4_kernel.h"
 
