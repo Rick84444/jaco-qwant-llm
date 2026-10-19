@@ -15,7 +15,7 @@ import tempfile
 from patch_litert_acfq import ENTRY, HOOK, INCLUDES, apply_patch
 
 PIN = "44455548be35bde21737b8a28ef0d027632c282d"
-KNOWN_HEADERS = ("6ef3c0b", "4dca4ef")
+KNOWN_HEADERS = ("6ef3c0b", "4dca4ef", "e57f5d7")
 
 
 def expected_legacy_source(original):
@@ -114,6 +114,12 @@ def plan(source_dir):
     return state, changes
 
 
+def historical_backup_path(path, before):
+    # Content-addressed backups allow multiple sequential source upgrades,
+    # without clobbering earlier .jaco-before-refresh historical backups.
+    return path.with_name(path.name + ".jaco-before-" + sha(before)[:12])
+
+
 def prepare_verified_backups(changes):
     """Allow a crash-interrupted upgrade to resume without losing backups.
 
@@ -121,13 +127,13 @@ def prepare_verified_backups(changes):
     bytes being replaced. Foreign backups abort before any updates.
     """
     for path, before, after in changes:
-        backup = path.with_name(path.name + ".jaco-before-refresh")
+        backup = historical_backup_path(path, before)
         if backup.is_symlink() or (backup.exists() and
                                   (not backup.is_file() or
                                    backup.read_bytes() != before)):
             raise ValueError("unexpected refresh backup: " + str(backup))
     for path, before, after in changes:
-        backup = path.with_name(path.name + ".jaco-before-refresh")
+        backup = historical_backup_path(path, before)
         if backup.exists():
             continue
         with backup.open("xb") as fh:

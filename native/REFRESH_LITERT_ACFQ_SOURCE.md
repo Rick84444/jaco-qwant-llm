@@ -25,3 +25,10 @@ but **does not build, install, or replace LiteRT-LM**. The Gemma 4 E2B
 service on localhost:9379 is unchanged, so its healthy `/v1/models`
 endpoint cannot demonstrate execution of this patch. Genuine inference
 integration requires a separately linked LiteRT-LM test binary.
+
+The current refresh tool also permits later **verified header-only upgrades**.
+It uses content-addressed `.jaco-before-<sha12>` backups for every new
+source revision while preserving older `.jaco-before-refresh` files.
+The optional native shadow checks `quantized_dimension==0` and attempts
+at most four eligible candidates per test process; these diagnostics never
+replace or accelerate the original operator.

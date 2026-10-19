@@ -5,7 +5,8 @@ from pathlib import Path
 
 import patch_litert_acfq as patch
 from refresh_litert_acfq_source import (classify_source, expected_legacy_source,
-                                        prepare_verified_backups)
+                                        prepare_verified_backups,
+                                        historical_backup_path)
 
 
 UPSTREAM = '''
@@ -48,15 +49,19 @@ class TestSparseSourceRefresh(unittest.TestCase):
             prepare_verified_backups(changes)
             prepare_verified_backups(changes)
             self.assertEqual(
-                (Path(td) / "compiled_model.cc.jaco-before-refresh").read_bytes(),
+                historical_backup_path(source, b"old-source").read_bytes(),
                 b"old-source")
             self.assertEqual(
-                (Path(td) / "jaco_acfq_shadow.h.jaco-before-refresh").read_bytes(),
+                historical_backup_path(header, b"old-header").read_bytes(),
                 b"old-header")
-            (Path(td) / "jaco_acfq_shadow.h.jaco-before-refresh").write_bytes(
+            historical_backup_path(header, b"old-header").write_bytes(
                 b"tampered")
             with self.assertRaisesRegex(ValueError, "unexpected refresh backup"):
                 prepare_verified_backups(changes)
+            self.assertNotEqual(
+                historical_backup_path(header, b"old-header"),
+                historical_backup_path(header, b"next-version"))
+            self.assertFalse(historical_backup_path(header, b"next-version").exists())
 
     def test_manual_source_edits_are_not_lost(self):
         old = expected_legacy_source(UPSTREAM)

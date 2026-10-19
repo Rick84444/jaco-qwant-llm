@@ -68,7 +68,7 @@ inline TfLiteStatus ShadowFullyConnected(TfLiteContext* ctx, TfLiteNode* node) {
 
   static std::atomic<uint64_t> eligible{0};
   static std::atomic<uint64_t> native_calls{0};
-  // Bounded default overhead: only the first eligible operation in-process.
+  // Diagnostic-only path: cap native trials at four eligible ops per process.
   if(!node || !node->inputs || node->inputs->size<2 || !node->outputs ||
      node->outputs->size!=1) return result;
   const TfLiteTensor* input=Tensor(ctx,node->inputs->data[0]);
@@ -93,11 +93,15 @@ inline TfLiteStatus ShadowFullyConnected(TfLiteContext* ctx, TfLiteNode* node) {
      !weights->quantization.params) return result;
   const auto* q=static_cast<const TfLiteAffineQuantization*>(
       weights->quantization.params);
-  if(!q->scale || q->scale->size!=n || !q->zero_point ||
+  // This GEMV only interprets weight scales on the output-channel axis.
+  if(q->quantized_dimension!=0 || !q->scale || q->scale->size!=n ||
+     !q->zero_point ||
      (q->zero_point->size!=n && q->zero_point->size!=1))
     return result;
+  // A single eligible but rejected candidate must not starve the remaining
+  // decoder nodes. Limit optional diagnostic work to four candidates/process.
   const uint64_t seq=eligible.fetch_add(1);
-  if(seq>0) return result;
+  if(seq>=4) return result;
 
   std::vector<int32_t> wzp(static_cast<size_t>(n),0);
   for(int j=0;j<n;++j) wzp[static_cast<size_t>(j)] =
