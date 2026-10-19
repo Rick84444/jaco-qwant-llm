@@ -97,7 +97,7 @@ class TestAgentRunner(unittest.TestCase):
                 self.fail("Stale report must never be overwritten without force")
             with mock.patch.object(runner, "http_json", side_effect=responder):
                 self.assertEqual(runner.run(missions, "http://127.0.0.1:9379",
-                                            out_dir, 600), 0)
+                                            out_dir, 600), 2)
             self.assertEqual(previous.read_text(), "Earlier report without SHA")
             manifest = json.loads((out_dir / "manifest.json").read_text())
             self.assertEqual(manifest["results"][0]["status"], "stale_existing")
@@ -115,7 +115,7 @@ class TestAgentRunner(unittest.TestCase):
             with mock.patch.object(runner, "http_json", side_effect=respond):
                 rc = runner.run(missions, "http://127.0.0.1:9379",
                                 out_dir, 600)
-            self.assertEqual(rc, 0)
+            self.assertEqual(rc, 2)
             self.assertEqual(existing.read_text(), "prior review")
 
 

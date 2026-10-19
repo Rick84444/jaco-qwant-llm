@@ -17,6 +17,11 @@ python3 native/run_litert_agents.py --audit-repo --dry-run
 python3 native/run_litert_agents.py --audit-repo --run
 ```
 
+If any existing report was produced from an earlier prompt/source revision,
+its status is `stale_existing`, the file is retained without modification,
+and the runner exits with status 2 rather than claiming a current review.
+Exit status 1 means a model/source error; 0 means current reviews.
+
 Reports are saved **outside the checkout** under
 `~/jaco-repo-audit-reports`. No task has authority to write GitHub,
 edit code, execute suggested shell commands, or approve itself.

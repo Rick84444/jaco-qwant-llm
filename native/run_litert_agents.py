@@ -277,7 +277,7 @@ def run(missions, base_url, out_dir, max_tokens, force=False):
     print(f"Result: {verified}/{len(results)} current; "
           f"stale retained={len(stale)}; errors={len(failures)}. "
           f"Reports: {out_dir}", flush=True)
-    return 1 if failures else 0
+    return 1 if failures else 2 if stale else 0
 
 def main():
     parser = argparse.ArgumentParser()
