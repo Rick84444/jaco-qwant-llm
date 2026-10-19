@@ -36,6 +36,7 @@ class TestAgentRunner(unittest.TestCase):
             prompt, hashes = runner.prompt_for(task)
             self.assertLessEqual(len(prompt), runner.PROMPT_CHARS_LIMIT)
             self.assertEqual(len(hashes), len(task["sources"]))
+            self.assertIn("full_file_sha256=", prompt)
         self.assertEqual(jobs[11]["sources"][0].split("@")[1], "1120:1212")
 
     def test_retry_only_for_context_failure(self):
@@ -56,6 +57,38 @@ class TestAgentRunner(unittest.TestCase):
         self.assertEqual(limit, 750)
         self.assertEqual(mocked.call_count, 2)
         self.assertEqual(len(digest), 64)
+
+    def test_source_excerpts_have_grounded_line_numbers(self):
+        excerpt, digest = runner.read_excerpt(
+            "native/gemma_int4_kernel.c", max_chars=450)
+        self.assertIn("1: #include", excerpt)
+        self.assertIn("LINES OMITTED", excerpt)
+        self.assertIn("full_file_sha256=", excerpt)
+        self.assertEqual(len(digest), 64)
+
+    def test_remote_url_is_rejected_without_network(self):
+        for url in ("https://example.com", "http://192.168.0.1:9379",
+                    "http://127.0.0.1:9379/other",
+                    "http://127.0.0.1:9379?token=hi"):
+            with self.assertRaises(ValueError):
+                runner.validated_local_base_url(url)
+
+    def test_old_report_is_retained_and_marked_stale(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out_dir = Path(tmp)
+            previous = out_dir / "mission-06.md"
+            previous.write_text("Earlier report without SHA", encoding="utf-8")
+            missions = {"model": "gemma4-e2b", "missions": [self.task]}
+            def responder(url, **kwargs):
+                if url.endswith("/v1/models"):
+                    return {"data": [{"id": "gemma4-e2b"}]}
+                self.fail("Stale report must never be overwritten without force")
+            with mock.patch.object(runner, "http_json", side_effect=responder):
+                self.assertEqual(runner.run(missions, "http://127.0.0.1:9379",
+                                            out_dir, 600), 0)
+            self.assertEqual(previous.read_text(), "Earlier report without SHA")
+            manifest = json.loads((out_dir / "manifest.json").read_text())
+            self.assertEqual(manifest["results"][0]["status"], "stale_existing")
 
     def test_existing_reports_survive_rerun(self):
         with tempfile.TemporaryDirectory() as tmp:
