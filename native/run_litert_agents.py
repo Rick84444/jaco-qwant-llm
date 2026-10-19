@@ -71,8 +71,8 @@ def read_excerpt(spec, max_chars=SOURCE_CHARS_DEFAULT):
     line_window = None
     if "@" in relative:
         relative, raw = relative.rsplit("@", 1)
-        a, b = raw.split(":", 1)
-        line_window = (int(a), int(b))
+        a, b = (int(value) for value in raw.split(":", 1))
+        line_window = (a, b)
         if a < 1 or b < a or b - a > 10000:
             raise ValueError("invalid source line window: " + spec)
     path = (root / relative).resolve()
