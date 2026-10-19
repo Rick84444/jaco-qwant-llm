@@ -20,7 +20,7 @@ Start your actual model server separately (e.g. llama.cpp with its OpenAI-compat
     ./start.sh chat "Hej JACO"
     ./start.sh serve
 
-The default runtime listens ONLY on localhost port 3131. Ctrl+C stops it. No automatic installs and no unprotected port 8000 server.
+The default runtime listens ONLY on localhost port 3131. Requests to `/v1/chat/completions` require `Content-Type: application/json` and reject cross-origin browser origins; the adapter provides no CORS access for unrelated websites. Ctrl+C stops it. No automatic installs and no unprotected port 8000 server.
 
 ## Gemma 4 E2B on Android / LiteRT-LM
 

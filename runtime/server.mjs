@@ -45,6 +45,21 @@ export function createRuntimeServer(config = configFromEnv(), fetchImpl = fetch)
       } catch (error) { return json(res, error.status || 502, { error: { message: error.message } }); }
     }
     if (req.method === "POST" && path === "/v1/chat/completions") {
+      // A localhost API is still reachable from browser pages. Reject
+      // cross-origin requests and browser-simple content types to prevent
+      // drive-by inference from unrelated websites (CORS remains disabled).
+      const origin = req.headers.origin;
+      if (origin) {
+        let allowed = false;
+        try {
+          const parsed = new URL(origin);
+          allowed = parsed.protocol === "http:" && parsed.host === req.headers.host;
+        } catch { /* invalid or null origins are rejected */ }
+        if (!allowed) return json(res, 403, { error: { message: "Cross-origin requests not allowed" } });
+      }
+      const mediaType = (req.headers["content-type"] || "").split(";")[0].trim().toLowerCase();
+      if (mediaType !== "application/json")
+        return json(res, 415, { error: { message: "Content-Type must be application/json" } });
       const controller = new AbortController();
       res.on("close", () => { if (!res.writableFinished) controller.abort(); });
       try {

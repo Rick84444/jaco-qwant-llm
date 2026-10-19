@@ -136,3 +136,45 @@ test("thinking modes do not modify other provider requests unless requested", as
     assert.throws(() => configFromEnv({ JACO_MODEL_THINKING: "sometimes" }), /must be/);
   } finally { await upstream.close(); }
 });
+
+test("localhost chat API refuses browser-simple and cross-origin requests", async () => {
+  let upstreamCalls = 0;
+  const upstream = await mock((req, res) => {
+    upstreamCalls++;
+    send(res, 200, { choices: [{ message: { content: "ok" } }] });
+  });
+  const app = createRuntimeServer(configFromEnv({
+    JACO_MODEL_BASE_URL: upstream.base, JACO_MODEL_ID: "gemma4-e2b"
+  }));
+  app.listen(0, "127.0.0.1");
+  await once(app, "listening");
+  const addr = "http://127.0.0.1:" + app.address().port;
+  const body = JSON.stringify({ messages: [{ role: "user", content: "Hej" }] });
+  try {
+    for (const headers of [
+      { "content-type": "text/plain", origin: "https://evil.example" },
+      { "content-type": "application/json", origin: "https://evil.example" },
+      { "content-type": "text/plain" },
+      { "content-type": "application/x-www-form-urlencoded" },
+      { "content-type": "application/json", origin: "null" },
+    ]) {
+      const res = await fetch(addr + "/v1/chat/completions", {
+        method: "POST", headers, body
+      });
+      assert.ok([403, 415].includes(res.status));
+      assert.equal(res.headers.get("access-control-allow-origin"), null);
+    }
+    assert.equal(upstreamCalls, 0);
+    const legitimate = await fetch(addr + "/v1/chat/completions", {
+      method: "POST",
+      headers: { "content-type": "application/json; charset=utf-8" },
+      body
+    });
+    assert.equal(legitimate.status, 200);
+    assert.equal(upstreamCalls, 1);
+  } finally {
+    await new Promise(done => app.close(done));
+    await upstream.close();
+  }
+});
+
