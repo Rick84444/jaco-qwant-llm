@@ -38,6 +38,13 @@ jobs:
         run: |
           cc -std=c11 -O2 -Wall -Wextra -D_POSIX_C_SOURCE=200809L -I native native/gemma_int4_kernel.c native/bench_gemma_int4.c -lm -o /tmp/jaco-int4-bench
           /tmp/jaco-int4-bench --quick --reps 2
+      - name: ACFQ LiteRT shadow C++ bridge smoke (mock ABI)
+        run: |
+          cc -std=c11 -O2 -I native -c native/gemma_int4_kernel.c -o /tmp/gemma-int4.o
+          c++ -std=c++17 -O2 -Wall -Wextra -I native/shadow_stubs -I native native/test_litert_acfq_shadow.cc /tmp/gemma-int4.o -lm -o /tmp/jaco-litert-shadow-check
+          /tmp/jaco-litert-shadow-check 2>&1 | tee /tmp/jaco-litert-shadow-test.log
+          grep -q "JACO_ACFQ_SHADOW: native_invocations=1" /tmp/jaco-litert-shadow-test.log
+          grep -q "JACO shadow smoke PASS" /tmp/jaco-litert-shadow-test.log
       - name: C++ native probe compilation
         run: CXX=g++ sh bench/build.sh
       - name: Scalar path (x86-64)

@@ -63,3 +63,14 @@ Prerequisites to claim integration success:
 
 Only `registration_installed=1` is insufficient. The live model on
 port 9379 is not affected by this source patch.
+
+## C++ bridge verification
+
+A separate GitHub Actions smoke test compiles `litert_acfq_shadow.h` against
+minimal TFLite-like **test structs**, links the actual C kernel, executes a
+simulated `FULLY_CONNECTED` callback, and asserts the original output was
+unchanged and the ACFQ invocation was logged.
+
+This does **not** constitute upstream LiteRT ABI compilation or a Gemma
+integration proof. An isolated build against the real LiteRT headers and
+then real Gemma runtime execution are still required.
