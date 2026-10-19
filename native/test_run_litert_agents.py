@@ -36,7 +36,7 @@ class TestAgentRunner(unittest.TestCase):
             prompt, hashes = runner.prompt_for(task)
             self.assertLessEqual(len(prompt), runner.PROMPT_CHARS_LIMIT)
             self.assertEqual(len(hashes), len(task["sources"]))
-        self.assertEqual(jobs[11]["sources"][0].split("@")[1], "1110:1220")
+        self.assertEqual(jobs[11]["sources"][0].split("@")[1], "1120:1212")
 
     def test_retry_only_for_context_failure(self):
         length_body = (

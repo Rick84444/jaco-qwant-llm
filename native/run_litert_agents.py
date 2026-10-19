@@ -157,7 +157,7 @@ def run(missions, base_url, out_dir, max_tokens, force=False):
                             "source_hashes": hashes,
                             "source_char_budget": source_budget})
         except (urllib.error.URLError, ValueError, KeyError, TimeoutError,
-                OSError) as exc:
+                RuntimeError, OSError) as exc:
             print(f"[{mid}/16] ERROR: {exc}", file=sys.stderr, flush=True)
             results.append({"id": mid, "status": "error", "reason": str(exc)})
     manifest_path = out_dir / "manifest.json"
