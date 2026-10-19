@@ -30,6 +30,16 @@ class TestProbe(unittest.TestCase):
             with self.assertRaises(ValueError):
                 probe.read_local_models(url)
 
+    def test_executable_kind_reads_only_four_bytes(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "big_elf"
+            with p.open("wb") as fh:
+                fh.write(b"\\x7fELF")
+                fh.write(b"X" * 65536)
+            self.assertEqual(probe.executable_kind(str(p)), "ELF")
+            self.assertEqual(probe.executable_kind(None), "absent")
+
     def test_only_model_id_is_read(self):
         payload = json.dumps({
             "data": [

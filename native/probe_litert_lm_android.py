@@ -114,6 +114,16 @@ def needed_from_readelf(executable, tool):
         return []
 
 
+def executable_kind(cli):
+    if not cli:
+        return "absent"
+    try:
+        with open(cli, "rb") as fh:
+            return "ELF" if fh.read(4) == b"\\x7fELF" else "launcher_script"
+    except OSError:
+        return "unreadable"
+
+
 def probe(url):
     cli = shutil.which("litert-lm")
     dist = installed_versions()
@@ -133,8 +143,7 @@ def probe(url):
         },
         "cli": {
             "found": bool(cli),
-            "kind": ("ELF" if cli and Path(cli).read_bytes()[:4] == b"\x7fELF"
-                     else "launcher_script" if cli else "absent"),
+            "kind": executable_kind(cli),
             "version": command_version(cli),
             "needed_shared_libs": needed_from_readelf(cli, shutil.which("readelf")),
         },
@@ -144,6 +153,9 @@ def probe(url):
             version: version_pin(version) for version in KNOWN_LITERT_PINS
         },
         "jaco_source_revision": JACO_PIN,
+        "installed_release_pin": version_pin(dist[0]["version"]) if dist else
+                                 version_pin(None),
+        "linked_litert_revision_verified": False,
         "interpretation": (
             "A responsive /v1/models endpoint identifies the service, "
             "NOT its linked LiteRT revision or actual CPU/GPU delegate. "
