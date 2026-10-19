@@ -114,6 +114,28 @@ def plan(source_dir):
     return state, changes
 
 
+def prepare_verified_backups(changes):
+    """Allow a crash-interrupted upgrade to resume without losing backups.
+
+    Existing backups are trusted ONLY when identical to the exact source
+    bytes being replaced. Foreign backups abort before any updates.
+    """
+    for path, before, after in changes:
+        backup = path.with_name(path.name + ".jaco-before-refresh")
+        if backup.is_symlink() or (backup.exists() and
+                                  (not backup.is_file() or
+                                   backup.read_bytes() != before)):
+            raise ValueError("unexpected refresh backup: " + str(backup))
+    for path, before, after in changes:
+        backup = path.with_name(path.name + ".jaco-before-refresh")
+        if backup.exists():
+            continue
+        with backup.open("xb") as fh:
+            fh.write(before)
+            fh.flush()
+            os.fsync(fh.fileno())
+
+
 def main():
     ap = argparse.ArgumentParser()
     action = ap.add_mutually_exclusive_group(required=True)
@@ -133,17 +155,10 @@ def main():
         if not changes:
             print("ALREADY CURRENT; no modifications")
             return 0
-        for path, before, after in changes:
-            backup = path.with_name(path.name + ".jaco-before-refresh")
-            if backup.exists():
-                raise ValueError("refresh backup already exists: " + str(backup))
-        # Save both older versions before touching either original file.
-        for path, before, after in changes:
-            backup = path.with_name(path.name + ".jaco-before-refresh")
-            with backup.open("xb") as fh:
-                fh.write(before)
-                fh.flush()
-                os.fsync(fh.fileno())
+        # Source and header cannot be replaced atomically as a unit. Backups
+        # are fully verified BEFORE any file changes and can be reused after
+        # a process interruption, allowing safe one-file-at-a-time recovery.
+        prepare_verified_backups(changes)
         for path, before, after in changes:
             atomic_write(path, after)
         print("REFRESH PASS: isolated source upgraded, old files backed up")

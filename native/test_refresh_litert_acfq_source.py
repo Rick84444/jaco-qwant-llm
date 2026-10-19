@@ -1,8 +1,11 @@
 """Verify an existing pinned LiteRT checkout can be upgraded safely."""
 import unittest
+import tempfile
+from pathlib import Path
 
 import patch_litert_acfq as patch
-from refresh_litert_acfq_source import classify_source, expected_legacy_source
+from refresh_litert_acfq_source import (classify_source, expected_legacy_source,
+                                        prepare_verified_backups)
 
 
 UPSTREAM = '''
@@ -31,6 +34,29 @@ class TestSparseSourceRefresh(unittest.TestCase):
         expected, status = classify_source(UPSTREAM, new)
         self.assertEqual(status, "already-current")
         self.assertEqual(expected, new)
+
+    def test_crash_safe_backups_are_idempotent(self):
+        with tempfile.TemporaryDirectory() as td:
+            source = Path(td) / "compiled_model.cc"
+            header = Path(td) / "jaco_acfq_shadow.h"
+            source.write_bytes(b"old-source")
+            header.write_bytes(b"old-header")
+            changes = [
+                (source, b"old-source", b"new-source"),
+                (header, b"old-header", b"new-header"),
+            ]
+            prepare_verified_backups(changes)
+            prepare_verified_backups(changes)
+            self.assertEqual(
+                (Path(td) / "compiled_model.cc.jaco-before-refresh").read_bytes(),
+                b"old-source")
+            self.assertEqual(
+                (Path(td) / "jaco_acfq_shadow.h.jaco-before-refresh").read_bytes(),
+                b"old-header")
+            (Path(td) / "jaco_acfq_shadow.h.jaco-before-refresh").write_bytes(
+                b"tampered")
+            with self.assertRaisesRegex(ValueError, "unexpected refresh backup"):
+                prepare_verified_backups(changes)
 
     def test_manual_source_edits_are_not_lost(self):
         old = expected_legacy_source(UPSTREAM)
