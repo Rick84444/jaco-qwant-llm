@@ -88,3 +88,32 @@ C++ hook and untouched-source backup. This is deliberately **not** an
 upstream build, inference test, or compatibility guarantee for other LiteRT
 revisions. Full dependencies and library build are not downloaded in this
 smoke test.
+
+## Space-bounded Android source preparation (2026-10-19)
+
+The user's Termux environment reports ARM64, `clang++`, `cmake`,
+`ninja`, 18 GiB free, and a live `litert-lm serve` process on port 9379.
+Prepare a sparse copy of **exact upstream LiteRT source** without fetching
+or building the full runtime:
+
+```bash
+cd ~/jaco-qwant-llm
+git pull --ff-only origin main
+bash native/setup_litert_acfq_source.sh
+```
+
+The script pins LiteRT commit `44455548be35bde21737b8a28ef0d027632c282d`,
+uses Git partial clone plus sparse checkout to fetch only the
+`compiled_model.cc` and TFLite common header, and patches a **new**
+`~/jaco-litert-acfq-source` directory. It fails if the destination
+already exists and requires at least 2 GiB free; it never deletes
+previous sources. This is only a reproducible **source-preparation**
+milestone, **not** a build and **not** Gemma decode integration.
+
+The actual LiteRT-LM native build must use a source-compatible LiteRT
+implementation (Google's CMake superbuild currently also builds TensorFlow
+Lite from a separate pinned repository). The sparse source folder cannot
+be directly linked into the existing Python wheel. Building/patching the
+backend independently, producing an Android-compatible shared library
+and connecting it to LiteRT-LM remain unsolved. Do not start a superbuild
+on a 18 GiB free device without estimating dependency disk use.

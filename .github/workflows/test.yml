@@ -45,6 +45,10 @@ jobs:
           /tmp/jaco-litert-shadow-check 2>&1 | tee /tmp/jaco-litert-shadow-test.log
           grep -q "JACO_ACFQ_SHADOW: native_invocations=1" /tmp/jaco-litert-shadow-test.log
           grep -q "JACO shadow smoke PASS" /tmp/jaco-litert-shadow-test.log
+      - name: Android isolated source setup syntax validation
+        run: |
+          bash -n native/setup_litert_acfq_source.sh
+          grep -q '44455548be35bde21737b8a28ef0d027632c282d' native/setup_litert_acfq_source.sh
       - name: Isolated LiteRT source patch integration smoke (pinned upstream)
         run: |
           set -e
