@@ -50,6 +50,8 @@ jobs:
         env:
           JACO_LITERT_ABI_SOURCE_MODE: download
         run: bash native/verify_litert_abi.sh
+      - name: Previously patched sparse-checkout refresh regression tests
+        run: python3 -m unittest discover -s native -p 'test_refresh_litert_acfq_source.py'
       - name: Delegate trace source-patch regression tests
         run: python3 -m unittest discover -s native -p 'test_patch_litert_acfq_trace.py'
       - name: Local review context-budget regression tests
