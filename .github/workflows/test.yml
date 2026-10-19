@@ -49,6 +49,8 @@ jobs:
         env:
           JACO_LITERT_ABI_SOURCE_MODE: download
         run: bash native/verify_litert_abi.sh
+      - name: Sixteen mission manifest and dry-run test (no model call)
+        run: python3 native/run_litert_agents.py --dry-run
       - name: Android isolated source setup syntax validation
         run: |
           bash -n native/setup_litert_acfq_source.sh

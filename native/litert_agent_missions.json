@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "title": "JACO ACFQ final LiteRT integration — sixteen isolated model-review assignments",
+  "claim": "Sixteen distinct LLM review contexts ONLY when the local runner is actually executed; cannot modify source or invoke GitHub from the runner.",
+  "model": "gemma4-e2b",
+  "missions": [
+    {
+      "id": "01",
+      "specialty": "Provenance",
+      "assignment": "Inspect source pinning, checkout safety and upstream provenance. Identify a reproducible failure or confirm invariants.",
+      "sources": [
+        "native/setup_litert_acfq_source.sh",
+        "native/patch_litert_acfq.py"
+      ],
+      "required_output": "Decision: POSSIBLE/BLOCKED/NEEDS_EVIDENCE. Evidence: exact source location. One minimal, falsifiable experiment or patch suggestion. Risks. Unknowns."
+    },
+    {
+      "id": "02",
+      "specialty": "ABI hygiene",
+      "assignment": "Audit real-header TFLite ABI usage and C++ header inclusion. Point to an exact incompatible symbol or accept a minimal compile test.",
+      "sources": [
+        "native/litert_acfq_shadow.h",
+        "native/verify_litert_abi.sh"
+      ],
+      "required_output": "Decision: POSSIBLE/BLOCKED/NEEDS_EVIDENCE. Evidence: exact source location. One minimal, falsifiable experiment or patch suggestion. Risks. Unknowns."
+    },
+    {
+      "id": "03",
+      "specialty": "ABI smoke",
+      "assignment": "Review the authentic-header test for undefined behavior, buffer lifetime, alignment and false positives. Give a concrete test improvement.",
+      "sources": [
+        "native/test_litert_acfq_real_abi.cc",
+        ".github/workflows/test.yml"
+      ],
+      "required_output": "Decision: POSSIBLE/BLOCKED/NEEDS_EVIDENCE. Evidence: exact source location. One minimal, falsifiable experiment or patch suggestion. Risks. Unknowns."
+    },
+    {
+      "id": "04",
+      "specialty": "ARM64 NEON",
+      "assignment": "Review native NEON dot-product math, overflow, input-zero-point handling and vector lanes; propose a falsifiable edge-case test.",
+      "sources": [
+        "native/gemma_int4_kernel.c",
+        "native/gemma_int4_kernel.h"
+      ],
+      "required_output": "Decision: POSSIBLE/BLOCKED/NEEDS_EVIDENCE. Evidence: exact source location. One minimal, falsifiable experiment or patch suggestion. Risks. Unknowns."
+    },
+    {
+      "id": "05",
+      "specialty": "INT4 packing",
+      "assignment": "Investigate actual model INT4 nibble order, row stride and observed decoder dimensions. Identify missing evidence; do not assume format.",
+      "sources": [
+        "native/gemma_decode_fc.py",
+        "evidence/gemma4-e2b-decode-observed.json"
+      ],
+      "required_output": "Decision: POSSIBLE/BLOCKED/NEEDS_EVIDENCE. Evidence: exact source location. One minimal, falsifiable experiment or patch suggestion. Risks. Unknowns."
+    },
+    {
+      "id": "06",
+      "specialty": "Quantization",
+      "assignment": "Audit channelwise scale, weight zero-points and real tensor quantization metadata. Give a model-vs-reference validation step.",
+      "sources": [
+        "native/litert_acfq_shadow.h",
+        "native/gemma_int4_kernel.c"
+      ],
+      "required_output": "Decision: POSSIBLE/BLOCKED/NEEDS_EVIDENCE. Evidence: exact source location. One minimal, falsifiable experiment or patch suggestion. Risks. Unknowns."
+    },
+    {
+      "id": "07",
+      "specialty": "Bias parity",
+      "assignment": "Audit bias handling and all missing terms needed to replace FullyConnected without changing inference.",
+      "sources": [
+        "native/litert_acfq_shadow.h",
+        "native/gemma_int4_kernel.h"
+      ],
+      "required_output": "Decision: POSSIBLE/BLOCKED/NEEDS_EVIDENCE. Evidence: exact source location. One minimal, falsifiable experiment or patch suggestion. Risks. Unknowns."
+    },
+    {
+      "id": "08",
+      "specialty": "Requantization",
+      "assignment": "Find exact limitations of FP32 native output versus INT8 FullyConnected output. Specify complete parity criterion.",
+      "sources": [
+        "native/gemma_int4_kernel.c",
+        "native/litert_acfq_shadow.h"
+      ],
+      "required_output": "Decision: POSSIBLE/BLOCKED/NEEDS_EVIDENCE. Evidence: exact source location. One minimal, falsifiable experiment or patch suggestion. Risks. Unknowns."
+    },
+    {
+      "id": "09",
+      "specialty": "Operator versions",
+      "assignment": "Review the resolver hook's registration version span against available model evidence; flag assumptions.",
+      "sources": [
+        "native/patch_litert_acfq.py",
+        "evidence/gemma4-e2b-decode-observed.json"
+      ],
+      "required_output": "Decision: POSSIBLE/BLOCKED/NEEDS_EVIDENCE. Evidence: exact source location. One minimal, falsifiable experiment or patch suggestion. Risks. Unknowns."
+    },
+    {
+      "id": "10",
+      "specialty": "Tensor shapes",
+      "assignment": "Verify batch/single-vector gating and expected decoder activation layout. Identify unsupported shapes precisely.",
+      "sources": [
+        "native/litert_acfq_shadow.h",
+        "native/gemma_decode_fc.py"
+      ],
+      "required_output": "Decision: POSSIBLE/BLOCKED/NEEDS_EVIDENCE. Evidence: exact source location. One minimal, falsifiable experiment or patch suggestion. Risks. Unknowns."
+    },
+    {
+      "id": "11",
+      "specialty": "CPU backend",
+      "assignment": "Review where CPU options and resolver registration happen. Specify a CPU-only non-production run that could reach the hook.",
+      "sources": [
+        "upstream:litert/runtime/compiled_model.cc@284:505",
+        "native/patch_litert_acfq.py"
+      ],
+      "required_output": "Decision: POSSIBLE/BLOCKED/NEEDS_EVIDENCE. Evidence: exact source location. One minimal, falsifiable experiment or patch suggestion. Risks. Unknowns."
+    },
+    {
+      "id": "12",
+      "specialty": "Delegate interception",
+      "assignment": "Investigate XNNPACK/YNNPACK bypass risk and what runtime observation would prove wrapper callbacks actually run.",
+      "sources": [
+        "upstream:litert/runtime/compiled_model.cc@500:790",
+        "native/LITERT_ACFQ_INTEGRATION.md"
+      ],
+      "required_output": "Decision: POSSIBLE/BLOCKED/NEEDS_EVIDENCE. Evidence: exact source location. One minimal, falsifiable experiment or patch suggestion. Risks. Unknowns."
+    },
+    {
+      "id": "13",
+      "specialty": "GPU route",
+      "assignment": "Analyze whether the installed GPU-enabled model could bypass CPU builtin hook. Give a falsifiable on-device observation.",
+      "sources": [
+        "upstream:litert/runtime/compiled_model.cc@500:790",
+        "native/LITERT_ACFQ_INTEGRATION.md"
+      ],
+      "required_output": "Decision: POSSIBLE/BLOCKED/NEEDS_EVIDENCE. Evidence: exact source location. One minimal, falsifiable experiment or patch suggestion. Risks. Unknowns."
+    },
+    {
+      "id": "14",
+      "specialty": "Android toolchain",
+      "assignment": "Assess isolated Termux build feasibility and missing dependencies, with a disk-safe compile gate.",
+      "sources": [
+        "native/setup_litert_acfq_source.sh",
+        "upstream:litert/CMakeLists.txt@65:178"
+      ],
+      "required_output": "Decision: POSSIBLE/BLOCKED/NEEDS_EVIDENCE. Evidence: exact source location. One minimal, falsifiable experiment or patch suggestion. Risks. Unknowns."
+    },
+    {
+      "id": "15",
+      "specialty": "Decode benchmark",
+      "assignment": "Design controlled A/B comparison against LiteRT for the same prompt, tokens and backend; never infer speedups from scalar baselines.",
+      "sources": [
+        "bench/gemma-compare.mjs",
+        "native/GEMMA_INT4_BENCHMARK.md"
+      ],
+      "required_output": "Decision: POSSIBLE/BLOCKED/NEEDS_EVIDENCE. Evidence: exact source location. One minimal, falsifiable experiment or patch suggestion. Risks. Unknowns."
+    },
+    {
+      "id": "16",
+      "specialty": "Rollback decision",
+      "assignment": "Audit fail-closed stop conditions, clean production separation and required evidence before any operator replacement.",
+      "sources": [
+        "native/FINAL_LITERT_MISSIONS.md",
+        "native/verify_litert_abi.sh"
+      ],
+      "required_output": "Decision: POSSIBLE/BLOCKED/NEEDS_EVIDENCE. Evidence: exact source location. One minimal, falsifiable experiment or patch suggestion. Risks. Unknowns."
+    }
+  ]
+}
