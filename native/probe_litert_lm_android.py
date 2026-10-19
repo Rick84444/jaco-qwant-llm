@@ -119,7 +119,7 @@ def executable_kind(cli):
         return "absent"
     try:
         with open(cli, "rb") as fh:
-            return "ELF" if fh.read(4) == b"\\x7fELF" else "launcher_script"
+            return "ELF" if fh.read(4) == b"\x7fELF" else "launcher_script"
     except OSError:
         return "unreadable"
 

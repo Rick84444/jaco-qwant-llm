@@ -35,7 +35,7 @@ class TestProbe(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "big_elf"
             with p.open("wb") as fh:
-                fh.write(b"\\x7fELF")
+                fh.write(b"\x7fELF")
                 fh.write(b"X" * 65536)
             self.assertEqual(probe.executable_kind(str(p)), "ELF")
             self.assertEqual(probe.executable_kind(None), "absent")
