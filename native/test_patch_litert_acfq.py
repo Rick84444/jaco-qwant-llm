@@ -16,7 +16,9 @@ class PatchSourceTests(unittest.TestCase):
                 '#include "tflite/delegates/xnnpack/xnnpack_delegate.h"\n'
                 'resolver->AddCustom("test", nullptr);\n'
                 '  tflite::InterpreterOptions interpreter_options;\n'
-                'interp_->ModifyGraphWithDelegate();\n')
+                'interp_->ModifyGraphWithDelegate();\n'
+                '      prev_counts = counts;\n'
+                '  compiled_model->CheckCpuTensors();\n')
     def test_patch_is_before_interpreter_creation(self):
         result,changed=p.apply_patch(self.fixture())
         self.assertTrue(changed)
