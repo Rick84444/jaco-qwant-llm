@@ -13,3 +13,15 @@ test("no false generation success",async()=>{
  await assert.rejects(measure("http://127.0.0.1",{},3000,async()=>({ok:true,json:async()=>({choices:[]})})),/No generated/);
  assert.equal(summarize([{route:"direct",elapsedMs:10},{route:"adapter",elapsedMs:15}]).adapterMinusDirectMs,5);
 });
+
+test("comparison rejects missing or malformed timing data",()=>{
+ assert.throws(()=>summarize([]),/Both routes/);
+ assert.throws(()=>summarize([{route:"direct",elapsedMs:11}]),/Both routes/);
+ assert.throws(()=>summarize([{route:"direct",elapsedMs:NaN},
+   {route:"adapter",elapsedMs:2}]),/Both routes/);
+});
+test("provider HTTP failures are reported before JSON decoding",async()=>{
+ await assert.rejects(measure("http://127.0.0.1",{},3000,
+   async()=>({ok:false,status:503,json:async()=>{throw Error("not JSON");}})),
+   /Upstream HTTP 503/);
+});

@@ -12,6 +12,12 @@ export function parse(args) {
   return cfg;
 }
 export function summarize(rows) {
+  if (!Array.isArray(rows) || !rows.length ||
+      rows.some(r => !["direct", "adapter"].includes(r.route) ||
+                 !Number.isFinite(r.elapsedMs) || r.elapsedMs < 0) ||
+      !rows.some(r => r.route === "direct") ||
+      !rows.some(r => r.route === "adapter"))
+    throw Error("Both routes require finite, nonnegative timing observations");
   const median = route => { const xs=rows.filter(r=>r.route===route).map(r=>r.elapsedMs).sort((a,b)=>a-b);
     return (xs[(xs.length-1)>>1]+xs[xs.length>>1])/2; };
   const direct=median("direct"), adapter=median("adapter");
@@ -21,8 +27,8 @@ export function summarize(rows) {
 export async function measure(url,payload,timeoutMs,fetchImpl=fetch) {
   const start=performance.now();
   const res=await fetchImpl(url,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload),signal:AbortSignal.timeout(timeoutMs)});
-  const data=await res.json();
   if(!res.ok) throw Error("Upstream HTTP "+res.status);
+  const data=await res.json();
   if(typeof data?.choices?.[0]?.message?.content!=="string"||!data.choices[0].message.content.length) throw Error("No generated content");
   return {elapsedMs:Math.round(performance.now()-start),promptTokens:data.usage?.prompt_tokens??null,
     completionTokens:data.usage?.completion_tokens??null,outputLength:data.choices[0].message.content.length};
