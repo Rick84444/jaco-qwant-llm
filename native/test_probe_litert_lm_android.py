@@ -13,6 +13,39 @@ spec.loader.exec_module(probe)
 
 
 class TestProbe(unittest.TestCase):
+    def test_dynamic_symbols_ignore_undefined_and_hidden_functions(self):
+        table = """Symbol table '.dynsym' contains 5 entries:
+  1: 00000000 18 FUNC GLOBAL DEFAULT 14 _ZN6tflite3ops7builtin22Register_FULLY_CONNECTEDEv
+  2: 00000000 18 FUNC GLOBAL DEFAULT UND _ZN6tflite3ops7builtin22Register_FULLY_CONNECTEDEv
+  3: 00000000 18 FUNC LOCAL HIDDEN 14 _ZN6tflite3ops7builtin10AddBuiltinEv
+  4: 00000000 18 FUNC GLOBAL DEFAULT 14 LiteRtCreateModelFromFd
+  5: 00000000  0 NOTYPE GLOBAL DEFAULT UND LiteRtCreateModelFromFd
+"""
+        result = probe.summarize_dynamic_symbols(table)
+        self.assertEqual(result["Register_FULLY_CONNECTED"]["defined_export_count"], 1)
+        self.assertEqual(result["AddBuiltin"]["defined_export_count"], 0)
+        self.assertEqual(result["LiteRtCreateModelFromFd"]["defined_export_count"], 1)
+
+    def test_missing_api_distribution_does_not_fail_probe(self):
+        with mock.patch.object(probe.md, "distribution",
+                               side_effect=probe.md.PackageNotFoundError):
+            result = probe.inspect_litert_lm_api_library("/usr/bin/readelf")
+        self.assertFalse(result["found"])
+
+    def test_native_packages_are_enumerated(self):
+        def fake_distribution(name):
+            if name not in ("litert-lm", "litert-lm-api", "litert-lm-builder"):
+                raise probe.md.PackageNotFoundError
+            class Dist:
+                version = "0.17.1"
+                metadata = {"Name": name}
+            return Dist()
+        with mock.patch.object(probe.md, "distribution",
+                               side_effect=fake_distribution):
+            labels = [x["name"] for x in probe.installed_versions()]
+        self.assertEqual(labels,
+                         ["litert-lm", "litert-lm-api", "litert-lm-builder"])
+
     def test_release_pins_are_different_and_not_binary_proof(self):
         self.assertEqual(probe.version_pin("0.17.1")["revision"],
                          "9fe5be45564c868408e6514c8aabb83e211a0911")

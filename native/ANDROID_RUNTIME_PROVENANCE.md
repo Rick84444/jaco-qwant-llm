@@ -44,3 +44,31 @@ the JSON.
 
 The existing compiled Linux `liblitert_runtime.a` and the native
 ARM64 smoke tests are insufficient evidence of runtime integration.
+
+
+## Installed wheel's actual ELF and dynamic-symbol probe
+
+Since `litert-lm` 0.17.1 is a Python launcher script, inspecting the
+launcher alone is insufficient. The installed `litert-lm-api` distribution
+contains `litert_lm/liblitert-lm.so`, as confirmed on Pixel 10 Pro.
+
+The same command now inspects that *actual native ELF* read-only:
+
+```bash
+python3 native/probe_litert_lm_android.py
+```
+
+Review the `native_litert_lm_api` JSON section: the path, `NEEDED`
+dependencies and only narrowly selected, **defined external symbols in
+ELF .dynsym**. The former `readelf -Ws` output combines regular and
+dynamic symbol tables and is therefore not conclusive about exports.
+
+**Critical limits:** ELF exports alone do not prove that C++
+`Register_FULLY_CONNECTED` is replaceable through `LD_PRELOAD`; intra-DSO
+direct calls, `-Bsymbolic`, visibility, the actual model delegate, and
+Android linker namespace rules remain relevant. A dependency absent from
+`NEEDED` could still be loaded with `dlopen`. Nor does inspecting the
+wheel prove the process on port 9379 loaded that exact file.
+
+Do not set `LD_PRELOAD`, modify installed wheels, or replace any
+`.so` as part of this observation step.

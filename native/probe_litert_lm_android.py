@@ -28,7 +28,7 @@ JACO_PIN = "44455548be35bde21737b8a28ef0d027632c282d"
 
 def installed_versions():
     entries = []
-    for name in ("litert-lm", "litert_lm", "ai-edge-litert-lm"):
+    for name in ("litert-lm", "litert-lm-api", "litert-lm-builder", "ai-edge-litert-lm"):
         try:
             dist = md.distribution(name)
         except md.PackageNotFoundError:
@@ -124,6 +124,90 @@ def executable_kind(cli):
         return "unreadable"
 
 
+
+# Only names of relevant dynamic ELF symbols, never a full symbol dump.
+SYMBOL_CANDIDATES = (
+    "Register_FULLY_CONNECTED",
+    "AddBuiltin",
+    "LiteRtCompiledModel",
+    "TfLiteOperatorCreate",
+    "LiteRtCreateModelFromFd",
+)
+
+
+def summarize_dynamic_symbols(table):
+    """Count defined, externally visible functions in ELF .dynsym only.
+
+    readelf -Ws combines .symtab and .dynsym and therefore cannot itself
+    prove dynamic visibility. Neither can visibility alone prove that
+    preloading would intercept the actual internal invocation.
+    """
+    found = {name: [] for name in SYMBOL_CANDIDATES}
+    for line in table.splitlines():
+        parts = line.split()
+        if (len(parts) < 8 or not parts[0].endswith(":") or
+                parts[3] != "FUNC" or parts[4] not in ("GLOBAL", "WEAK") or
+                parts[5] not in ("DEFAULT", "PROTECTED") or
+                parts[6] in ("UND", "ABS")):
+            continue
+        symbol = parts[7].split("@")[0]
+        for name in SYMBOL_CANDIDATES:
+            if name in symbol:
+                found[name].append(symbol)
+    return {
+        name: {
+            "defined_export_count": len(values),
+            "sample_symbols": sorted(set(values))[:3],
+        } for name, values in found.items()
+    }
+
+
+def inspect_litert_lm_api_library(tool):
+    """Inspect the installed wheel's ELF, without executing or modifying it."""
+    try:
+        dist = md.distribution("litert-lm-api")
+    except md.PackageNotFoundError:
+        return {"found": False, "reason": "litert-lm-api not installed"}
+    candidates = [x for x in (dist.files or ())
+                  if x.name == "liblitert-lm.so"]
+    if not candidates:
+        return {"found": False, "reason": "native library absent in wheel metadata"}
+    lib = Path(dist.locate_file(candidates[0]))
+    if not lib.is_file():
+        return {"found": False, "reason": "wheel's native file not present"}
+    result = {
+        "found": True,
+        "distribution": "litert-lm-api",
+        "distribution_version": dist.version,
+        "path": str(lib),
+        "size_mib": round(lib.stat().st_size / 1048576, 2),
+        "needed_shared_libs": needed_from_readelf(str(lib), tool),
+        "dynamic_exports": None,
+        "actual_process_has_loaded_this_file": "NOT_VERIFIED",
+        "interposition_safe": "NOT_VERIFIED",
+    }
+    if not tool:
+        result["symbol_probe"] = "readelf missing"
+        return result
+    try:
+        with lib.open("rb") as fh:
+            if fh.read(4) != b"\x7fELF":
+                result["symbol_probe"] = "not an ELF file"
+                return result
+        command = subprocess.run(
+            [tool, "-W", "--dyn-syms", str(lib)],
+            check=False, capture_output=True, text=True, timeout=12,
+        )
+        if command.returncode != 0:
+            result["symbol_probe"] = "readelf failed"
+            return result
+        result["dynamic_exports"] = summarize_dynamic_symbols(command.stdout)
+        result["symbol_probe"] = "ELF dynamic symbol table only"
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        result["symbol_probe"] = type(exc).__name__
+    return result
+
+
 def probe(url):
     cli = shutil.which("litert-lm")
     dist = installed_versions()
@@ -148,6 +232,7 @@ def probe(url):
             "needed_shared_libs": needed_from_readelf(cli, shutil.which("readelf")),
         },
         "python_packages": dist,
+        "native_litert_lm_api": inspect_litert_lm_api_library(shutil.which("readelf")),
         "server": read_local_models(url),
         "known_release_revisions": {
             version: version_pin(version) for version in KNOWN_LITERT_PINS
