@@ -42,6 +42,16 @@ jobs:
           cmp "$HOME/jaco-litert-acfq-0171-source/litert/runtime/compiled_model.cc.jaco-original" \
             <(git -C "$HOME/jaco-litert-acfq-0171-source" show \
               HEAD:litert/runtime/compiled_model.cc)
+      - name: Register separate C API interpreter-construction probe
+        run: |
+          set -euo pipefail
+          cat >> "$HOME/jaco-litert-acfq-0171-source/litert/CMakeLists.txt" <<'CMAKE'
+          # JACO C API probe: only in ephemeral, version-pinned source checkout.
+          add_executable(jaco_litert_0171_probe
+              "$ENV{GITHUB_WORKSPACE}/native/litert_0171_runtime_probe.cc")
+          target_link_libraries(jaco_litert_0171_probe
+              PRIVATE litert_runtime_c_api_static)
+          CMAKE
       - name: Configure pinned LiteRT 0.17.1 CPU runtime (GPU and NPU disabled)
         timeout-minutes: 22
         run: |
@@ -61,6 +71,20 @@ jobs:
             2>&1 | tee "$GITHUB_WORKSPACE/litert-0171-build.log"
           find "$RUNNER_TEMP/jaco-litert-0171-build" \
             -name 'liblitert_runtime*' -type f -print
+      - name: Link and execute isolated native CPU model construction probe
+        timeout-minutes: 12
+        run: |
+          set -o pipefail
+          cmake --build "$RUNNER_TEMP/jaco-litert-0171-build" \
+            --target jaco_litert_0171_probe --parallel 2 \
+            2>&1 | tee "$GITHUB_WORKSPACE/litert-0171-probe-build.log"
+          JACO_ACFQ_SHADOW=1 "$RUNNER_TEMP/jaco-litert-0171-build/jaco_litert_0171_probe" \
+            "$HOME/jaco-litert-acfq-0171-source/litert/test/testdata/ff.tflite" \
+            2>&1 | tee "$GITHUB_WORKSPACE/litert-0171-probe-run.log"
+          grep -q 'JACO_ACFQ_SHADOW: registration_installed=1' \
+            "$GITHUB_WORKSPACE/litert-0171-probe-run.log"
+          grep -q 'JACO_0171_PROBE: CPU model compiled' \
+            "$GITHUB_WORKSPACE/litert-0171-probe-run.log"
       - name: Preserve reproducible build evidence (no installable binaries)
         if: always()
         uses: actions/upload-artifact@v4
@@ -69,5 +93,7 @@ jobs:
           path: |
             litert-0171-configure.log
             litert-0171-build.log
+            litert-0171-probe-build.log
+            litert-0171-probe-run.log
           if-no-files-found: ignore
           retention-days: 7

@@ -62,3 +62,21 @@ nor prove a genuine Gemma decode, its outputs, Android ABI, or speedups.
 
 CI preserves configure/build logs for review, but does not publish any
 ready-to-install Android library.
+
+## Standalone linked interpreter-construction proof
+
+`native/litert_0171_runtime_probe.cc` now compiles and links
+against `litert_runtime_c_api_static` from the SAME patched, pinned
+upstream checkout in an ephemeral GitHub Actions job. It loads the
+public upstream `litert/test/testdata/ff.tflite` sample, requests CPU
+compilation, and verifies the opt-in ACFQ registration diagnostic.
+
+This deliberately stops before inference. A passing test verifies a
+real C API interpreter can compile a public TFLite model with the ACFQ
+hook registered; it does not verify a `FULLY_CONNECTED` callback
+was invoked, that the sample has a matching Q4 tensor, that Gemma
+loads, or that tokens/s improved.
+
+The hook cannot be installed into the existing Android wheel simply by
+copying the resulting Linux executable or static libraries. No wheel
+replacement or model manipulation occurs.
