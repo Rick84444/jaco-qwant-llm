@@ -114,7 +114,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$GITHUB_WORKSPACE/experimental-artifact"
-          cp -L "$RUNNER_TEMP/jaco-litert-lm-0171/bazel-bin/c/litert-lm" \
+          cp -L "$RUNNER_TEMP/jaco-litert-lm-0171/bazel-bin/c/liblitert-lm.so" \
             "$GITHUB_WORKSPACE/experimental-artifact/liblitert-lm-acfq-0171-experimental.so"
           SO="$GITHUB_WORKSPACE/experimental-artifact/liblitert-lm-acfq-0171-experimental.so"
           readelf -h "$SO" | tee "$GITHUB_WORKSPACE/experimental-artifact/elf-header.txt"
