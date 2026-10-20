@@ -35,7 +35,10 @@ jobs:
           sudo apt-get update -q
           sudo apt-get install -y -q git-lfs ccache patchelf pkg-config libssl-dev
           git lfs install
-          npm install -g @bazel/bazelisk
+          # Global /usr/local npm prefix is read-only for the runner user.
+          npm install --prefix "$RUNNER_TEMP/jaco-bazel" --no-save @bazel/bazelisk
+          export PATH="$RUNNER_TEMP/jaco-bazel/node_modules/.bin:$PATH"
+          echo "$RUNNER_TEMP/jaco-bazel/node_modules/.bin" >> "$GITHUB_PATH"
           rustup toolchain install stable --profile minimal
           rustup default stable
           bazelisk version
