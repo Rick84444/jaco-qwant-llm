@@ -2,7 +2,12 @@
 # ABI validation with authentic pinned LiteRT headers, without linking LiteRT.
 set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PIN="44455548be35bde21737b8a28ef0d027632c282d"
+PIN="${JACO_LITERT_ABI_PIN:-44455548be35bde21737b8a28ef0d027632c282d}"
+# Only explicitly reviewed, upstream LiteRT revisions are accepted.
+case "$PIN" in
+  44455548be35bde21737b8a28ef0d027632c282d|9fe5be45564c868408e6514c8aabb83e211a0911) ;;
+  *) echo "Unreviewed JACO_LITERT_ABI_PIN; refusing ABI test" >&2; exit 2 ;;
+esac
 SOURCE="${JACO_LITERT_SHADOW_SRC_DIR:-$HOME/jaco-litert-acfq-source}"
 MODE="${JACO_LITERT_ABI_SOURCE_MODE:-git}"
 BASE="${TMPDIR:-${PREFIX:+$PREFIX/tmp}}"
@@ -40,7 +45,7 @@ cp "$REPO/native/gemma_int4_kernel.h" \
   "$WORK/litert/runtime/jaco_acfq_native/gemma_int4_kernel.h"
 "$CC" -std=c11 -O2 -Wall -Wextra -I "$REPO/native" \
   -c "$REPO/native/gemma_int4_kernel.c" -o "$WORK/gemma_int4.o"
-"$CXX" -std=c++17 -O2 -Wall -Wextra -I "$WORK" \
+"$CXX" -std=c++17 -O2 -Wall -Wextra -Werror=sign-compare -I "$WORK" \
   "$REPO/native/test_litert_acfq_real_abi.cc" "$WORK/gemma_int4.o" \
   -lm -o "$WORK/real-abi"
 "$WORK/real-abi" > "$WORK/results.log" 2>&1

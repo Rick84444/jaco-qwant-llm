@@ -32,3 +32,18 @@ Before building any isolated Android 0.17.1 LiteRT-LM executable:
 4. Verify INT8xINT4 weight semantics, bias, outputs, and tokens/s.
 
 Never overwrite the production wheel, model or port-9379 server.
+
+## ABI test against 0.17.1's *actual* TFLite headers
+
+The existing smoke test can now select the exact 0.17.1 header revision:
+
+```bash
+JACO_LITERT_ABI_PIN=9fe5be45564c868408e6514c8aabb83e211a0911 \
+JACO_LITERT_ABI_SOURCE_MODE=download \
+bash native/verify_litert_abi.sh
+```
+
+This downloads the four pinned upstream headers into a **temporary directory**,
+compiles the native candidate with `-Werror=sign-compare`, and runs the
+test callback. It does not access or replace any installed Android wheel,
+nor execute actual Gemma decoding. Only two reviewed LiteRT SHAs may be used.
