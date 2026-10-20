@@ -64,6 +64,26 @@ jobs:
         run: bash native/verify_litert_abi.sh
       - name: Read-only installed LiteRT-LM provenance probe regression tests
         run: python3 -m unittest discover -s native -p 'test_probe_litert_lm_android.py'
+      - name: Pinned LiteRT 0.17.1 source adapter tests
+        run: python3 -m unittest discover -s native -p 'test_patch_litert_acfq_v0171.py'
+      - name: Real upstream LiteRT v0.17.1 source anchor test (no native build)
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 2 \
+            https://raw.githubusercontent.com/google-ai-edge/LiteRT/9fe5be45564c868408e6514c8aabb83e211a0911/litert/runtime/compiled_model.cc \
+            -o /tmp/jaco-litert-0171.cc
+          python3 - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,'native')
+          from patch_litert_acfq_v0171 import patch_source,TRACE_MARKER
+          source=Path('/tmp/jaco-litert-0171.cc').read_text()
+          patched, changed=patch_source(source)
+          assert changed and TRACE_MARKER in patched
+          assert 'jaco_acfq::ShadowRegistration()' in patched
+          assert patch_source(patched)==(patched,False)
+          print('PASS: pinned upstream 0.17.1 source patched in memory only')
+          PY
       - name: Previously patched sparse-checkout refresh regression tests
         run: python3 -m unittest discover -s native -p 'test_refresh_litert_acfq_source.py'
       - name: Refresh tests run by explicit file path (Termux regression)
