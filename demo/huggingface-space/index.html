@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
   <meta name="description" content="Utforska öppna AI-modeller för JACO via Hugging Face.">
-  <title>JACO — Model Explorer</title>
+  <title>JACO — Aura & QWANT Technology Preview</title>
   <style>
     :root { font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; color: #e8ecfa; background: #0c1120; }
     * { box-sizing: border-box; }
@@ -44,6 +44,23 @@
     .provider-status { font-size:13px; color:#b7c6e5; white-space:pre-wrap; }
     .probe { font-size:13px; padding:9px 11px; min-height:36px; background:transparent; color:#d7e5ff; border:1px solid #50618b; }
     .linkrow { display:flex; align-items:center; flex-wrap:wrap; gap:16px; }
+    .product-hero { margin:30px 0 42px; border:1px solid #43577b; border-radius:18px; padding:clamp(20px,4vw,32px); background:linear-gradient(135deg,#192746 0%,#101b32 70%); }
+    .product-top { display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; align-items:center; }
+    .product-label { color:#bad1ff; text-transform:uppercase; font-size:12px; letter-spacing:.11em; font-weight:700; }
+    .product-hero h2 {font-size:clamp(26px,4vw,39px); letter-spacing:-.045em; margin:16px 0 8px;}
+    .product-hero p {max-width:750px;}
+    .capability-grid {display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; margin:22px 0;}
+    .capability {border:1px solid #364a6f; border-radius:12px; padding:16px; background:#131f37;}
+    .capability strong {display:block; font-size:15px; margin:0 0 6px;}
+    .capability span {color:#b7c5e0; font-size:13px; line-height:1.55;}
+    .tech-hint {font-size:13px; color:#adc4ec;}
+    .pill-status {border:1px solid #7189bb; border-radius:999px; padding:6px 10px; font-size:12px; color:#d5e2ff;}
+    .code-example {border:1px solid #314363; background:#0b1427; color:#dee8ff; padding:16px; border-radius:12px; overflow-x:auto; font-size:12px; line-height:1.65; margin:12px 0; white-space:pre;}
+    .product-actions {display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin:14px 0;}
+    .product-actions a {text-decoration:none;}
+    .product-actions .primary-action {background:#e7edff; color:#10172b; font-weight:700; border-radius:10px; padding:12px 15px;}
+    .receipt {color:#b7c9e6; font-size:13px;}
+    .disclosure {border-top:1px solid #415275; padding-top:16px; margin-top:16px; font-size:13px;}
     footer { border-top: 1px solid #2b3650; margin-top: 50px; padding-top: 24px; font-size: 13px; color: #92a4c7; }
     @media (max-width: 690px) { .toolbar { grid-template-columns: 1fr; } .eyebrow { margin-top: 45px; } }
   </style>
@@ -54,9 +71,47 @@
       <a class="toplink" href="https://github.com/Rick84444/jaco-qwant-llm" target="_blank" rel="noopener noreferrer">Open source ↗</a>
     </header>
     <main>
-      <div class="eyebrow">Cognitive runtime · Public preview</div>
-      <h1>En AI-plattform.<br>Många modellval.</h1>
-      <p class="lead">Utforska öppna AI-modeller på Hugging Face för framtida JACO-integration. Sök direkt i den publika katalogen, läs modellkorten och prova tillgängliga modeller i Hugging Faces Playground.</p>
+      <div class="eyebrow">JACO · Aura · QWANT Runtime</div>
+      <h1>Prova JACO. Följ utvecklingen av QWANT.</h1>
+      <p class="lead">JACO är ett agentiskt IDE och en modelloberoende runtime. QWANT är den fristående modelladaptern och experimentella ACFQ-kärnan. Här kan du granska riktiga tester, köra den lokala modelladaptern och utforska modeller för JACO.</p>
+      <section class="product-hero" aria-labelledby="qwant-title">
+        <div class="product-top">
+          <span class="product-label">JACO QWANT LLM · Technical showcase</span>
+          <span class="pill-status">Utvecklingsversion – inte färdig LLM</span>
+        </div>
+        <h2 id="qwant-title">Egen modell-runtime. Verifierbar kod. Öppen utveckling.</h2>
+        <p>QWANT kör verkliga svar från en ansluten modell via ett OpenAI-kompatibelt API. På Android har Gemma 4 E2B svarat genom JACO:s adapter. ACFQ är en separat forskningskärna för kvantiserad inferens – den är ännu inte aktiverad i Gemmas inferensgraf.</p>
+        <div class="capability-grid">
+          <div class="capability"><strong>Körbar modelladapter</strong><span>Upptäcker modeller, hanterar chat och vidarebefordrar streaming. Bevis: lokalt Gemma-anrop och GitHub-kontraktstester.</span></div>
+          <div class="capability"><strong>ACFQ-kärna</strong><span>ARM/NEON INT4/GEMV-experiment. Syntetiska tester finns; acceleration av en hel språkmodell är ännu inte bevisad.</span></div>
+          <div class="capability"><strong>Android ARM64</strong><span>Native LiteRT-LM-byggflöde. Binärens kontroll och verklig Android-inferens måste verifieras före produktstatus.</span></div>
+        </div>
+        <div class="product-actions">
+          <a class="primary-action" href="https://github.com/Rick84444/jaco-qwant-llm" target="_blank" rel="noopener noreferrer">Granska QWANT-koden ↗</a>
+          <a class="action" href="https://jacocode.com" target="_blank" rel="noopener noreferrer">JACO IDE ↗</a>
+          <a class="action" href="https://github.com/Rick84444/jaco-qwant-llm/actions" target="_blank" rel="noopener noreferrer">Verifiera byggen ↗</a>
+        </div>
+        <details>
+          <summary class="action" style="cursor:pointer">Testa QWANT lokalt med din egen Gemma/LiteRT-installation</summary>
+          <p class="tech-hint">Kräver Node.js 20+, ett redan körande LiteRT-LM med modellen <code>gemma4-e2b</code> på 127.0.0.1:9379 samt terminal. Startar ingen betald modell.</p>
+          <pre class="code-example" id="qwant-example">git clone https://github.com/Rick84444/jaco-qwant-llm.git
+cd jaco-qwant-llm
+export JACO_MODEL_PROVIDER=custom
+export JACO_MODEL_BASE_URL=http://127.0.0.1:9379/v1
+export JACO_MODEL_ID=gemma4-e2b
+./start.sh doctor
+./start.sh chat "Svara kort: vad är 2+2?"</pre>
+          <div class="product-actions"><button id="copy-qwant-example" class="probe" type="button">Kopiera testkommando</button><span id="copy-qwant-status" class="receipt" aria-live="polite"></span></div>
+        </details>
+        <div class="disclosure">
+          <strong>Verifieringsläge:</strong> <span id="qwant-actions-state">Läs de senaste CI-körningarna direkt på GitHub.</span>
+          <p class="receipt">Lokala enhetstester och ett syntetiskt kernelbenchmark är inte samma sak som snabbare tokens/sekund i Gemma. JACO QWANT är i nuläget en runtime och en forskningskärna, inte nya publicerade modellvikter.</p>
+          <div class="product-actions">
+            <a class="action" href="https://github.com/Rick84444/jaco-qwant-llm/blob/main/evidence/gemma4-e2b-decode-observed.json" target="_blank" rel="noopener noreferrer">Verklig Gemma-grafanalys ↗</a>
+            <a class="action" href="https://github.com/Rick84444/jaco-qwant-llm/blob/main/evidence/gemma-int4-pixel10pro-2026-10-19.csv" target="_blank" rel="noopener noreferrer">Syntetisk native-benchmark ↗</a>
+          </div>
+        </div>
+      </section>
       <div class="note"><strong>Vad fungerar i denna demo?</strong> Live sökning efter offentliga modellkort. Detta är inte en körande JACO-agent eller en inferensserver. Modeller på Hubben kan sakna en aktiv inferensleverantör. Inga API-nycklar efterfrågas eller lagras.</div>
       <section class="featured" aria-label="JACO:s modellkandidater">
         <div class="pick-head"><div><h2 class="section-title">Modeller att utvärdera</h2><p>Granskat urval, inte ett uppmätt benchmark eller löfte om driftskompatibilitet.</p></div>
@@ -219,6 +274,39 @@
       }
     }
     pickGoal.addEventListener("change",renderPicks);
+    // No model calls or fake outcomes; status links are read-only public GitHub data.
+    const copyButton = document.querySelector("#copy-qwant-example");
+    copyButton.addEventListener("click", async () => {
+      const code = document.querySelector("#qwant-example").textContent;
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error("clipboard-unavailable");
+        await navigator.clipboard.writeText(code);
+        document.querySelector("#copy-qwant-status").textContent = "Kopierat.";
+      } catch {
+        document.querySelector("#copy-qwant-status").textContent = "Markera texten och kopiera manuellt.";
+      }
+    });
+    async function checkQwantCI() {
+      const status = document.querySelector("#qwant-actions-state");
+      try {
+        const response = await fetch("https://api.github.com/repos/Rick84444/jaco-qwant-llm/actions/runs?per_page=30", {
+          headers: { accept: "application/vnd.github+json" }, signal: AbortSignal.timeout(8000)
+        });
+        if (!response.ok) throw new Error("GitHub status " + response.status);
+        const data = await response.json();
+        const runs = Array.isArray(data.workflow_runs) ? data.workflow_runs : [];
+        const runtime = runs.find(r => r.name === "runtime-and-kernel-tests");
+        const android = runs.find(r => r.name === "experimental-litert-lm-0171-android-arm64");
+        function describe(run) {
+          if (!run) return "ej verifierat";
+          return run.status === "completed" ? (run.conclusion === "success" ? "godkänt" : "ej godkänt") : "pågår";
+        }
+        status.textContent = "Senaste GitHub Actions: runtime " + describe(runtime) + " · experimentell ARM64 " + describe(android) + ". CI innebär inte verifierad modellacceleration.";
+      } catch {
+        status.textContent = "Live CI-status kan inte läsas i denna webbläsare. Öppna GitHub Actions via länken ovan.";
+      }
+    }
+    checkQwantCI();
     form.addEventListener("submit", event => { event.preventDefault(); loadModels(); });
     loadPicks();
     loadModels();

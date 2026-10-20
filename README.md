@@ -242,3 +242,16 @@ Research update: the candidate catalog also includes
 `deepseek-ai/DeepSeek-V4.1-Flash-1017` and
 `Qwen/Qwen3.8-Flash-Next`. Both remain recommendations only until confirmed
 via the live HF router and measured on actual JACO tasks.
+
+## Public JACO QWANT technology showcase
+
+The free Hugging Face Static Space source in
+[`demo/huggingface-space/`](demo/huggingface-space/README.md) now starts with
+the **QWANT model runtime and experimental ACFQ** rather than a generic model
+list. Its public status is anchored to GitHub Actions and operator-provided
+Gemma evidence. It includes real local test commands.
+
+No original model weights are produced or uploaded by this repository; JACO
+QWANT currently adapts upstream models. ACFQ has not demonstrated
+end-to-end acceleration. The full JACO IDE remains a separate product, with
+its own security and publication requirements.
