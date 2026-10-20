@@ -237,3 +237,8 @@ has no write scope, so it cannot publish directly from this conversation.
 
 Be careful: `rank` uses your Hugging Face token but requests metadata only.
 The public Space never receives credentials.
+
+Research update: the candidate catalog also includes
+`deepseek-ai/DeepSeek-V4.1-Flash-1017` and
+`Qwen/Qwen3.8-Flash-Next`. Both remain recommendations only until confirmed
+via the live HF router and measured on actual JACO tasks.

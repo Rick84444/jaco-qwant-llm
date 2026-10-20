@@ -153,6 +153,48 @@
       "rationale": "Reasoning and tool use; alternative to compare with Qwen on a capable workstation.",
       "constraint": "Requires a runtime that handles the Harmony format correctly. Not verified on Pixel.",
       "source": "https://huggingface.co/openai/gpt-oss-20b"
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+      "name": "DeepSeek V4.1 Flash 1017",
+      "license": "MIT",
+      "size": "Very large MoE (vendor model-card lists 763B parameters)",
+      "focus": [
+        "coding",
+        "agents",
+        "multimodal"
+      ],
+      "fit": {
+        "coding": 5,
+        "agents": 5,
+        "local": 1,
+        "multimodal": 4
+      },
+      "deployment": "cloud",
+      "rationale": "17 October 2026 revision claims stronger coding, tool use and faster task completion than V4.1 Flash. Compare it empirically rather than inheriting previous version's score.",
+      "constraint": "Provider availability is changing; check live router /v1/models. A Hub card alone does not guarantee a callable model. Published benchmark figures are vendor-reported.",
+      "source": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash-1017"
+    },
+    {
+      "id": "Qwen/Qwen3.8-Flash-Next",
+      "name": "Qwen3.8 Flash Next",
+      "license": "Qwen Community 1.0",
+      "size": "180B total parameters",
+      "focus": [
+        "coding",
+        "agents",
+        "multimodal"
+      ],
+      "fit": {
+        "coding": 4,
+        "agents": 4,
+        "local": 1,
+        "multimodal": 4
+      },
+      "deployment": "cloud",
+      "rationale": "Architecture focused on performance per active compute and long-context agent workflows; candidate to benchmark against GLM and DeepSeek.",
+      "constraint": "Custom Qwen Community license needs review. Community reports mixed task-time efficiency. Too large for Android local inference.",
+      "source": "https://huggingface.co/Qwen/Qwen3.8-Flash-Next"
     }
   ]
 }

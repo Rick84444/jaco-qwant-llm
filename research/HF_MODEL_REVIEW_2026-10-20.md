@@ -75,3 +75,25 @@ explicitly supported tool calls.
 `demo/huggingface-space/catalog.json`: public curated model list.
 `demo/huggingface-space/index.html`: goal tabs and per-model live metadata
 check (public, optional, fails closed on CORS/network restrictions).
+
+## 20 October late-update candidates
+
+- **DeepSeek V4.1-Flash-1017 (17 October release)**:
+  https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash-1017
+  Official model card reports improvements over V4.1 Flash on agentic benchmarks
+  and runtime. Do not equate that self-report with JACO validation. Inference
+  availability changed between cached model-card snapshots; rely on the *live*
+  router's status at selection time.
+- **Qwen3.8-Flash-Next**:
+  https://huggingface.co/Qwen/Qwen3.8-Flash-Next
+  180B-class model; Qwen community license and workload efficiency merit
+  caution before choosing for a public demo.
+- October community example:
+  https://www.reddit.com/r/AI_Agents/comments/1x94evs/chinese_models_for_vibe_coding_kimi_deepseek_glm/
+  Developers use Kimi for architecture/design, GLM Flash for execution, and
+  independent review for critical changes. This is an unvalidated **agent
+  role-specialization hypothesis**, not a proven multi-agent speedup.
+- October multi-model comparison:
+  https://www.reddit.com/r/LocalLLaMA/comments/1x8bb6b/deepseek_v41_flash_1017_now_leads_openweight/
+  Discussion highlights disagreement about benchmark rank versus useful output
+  per dollar/token. JACO should record task success plus tokens and elapsed time.
