@@ -48,5 +48,7 @@ test("static demo is explicitly a catalog, not a fake inference server", () => {
   const html = readFileSync(new URL("../demo/huggingface-space/index.html", import.meta.url), "utf8");
   assert.match(html, /huggingface\.co\/api\/models/);
   assert.match(html, /huggingface\.co\/playground/);
-  assert.doesNotMatch(html, /HF_TOKEN|JACO_MODEL_API_KEY/);
+  // Shell examples may document variable names; never embed an actual credential.
+  assert.doesNotMatch(html, /\\b(?:hf_[A-Za-z0-9]{25,}|sk-[A-Za-z0-9]{25,})\\b/);
+  assert.doesNotMatch(html, /<script[^>]*>[\\s\\S]*?Bearer\\s+hf_/i);
 });

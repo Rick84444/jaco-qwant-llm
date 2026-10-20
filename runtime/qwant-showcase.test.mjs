@@ -13,7 +13,9 @@ test("QWANT gets a prominent, accurately labeled product preview", () => {
   assert.match(html, /gemma4-e2b/);
   assert.match(html, /github\.com\/Rick84444\/jaco-qwant-llm/);
   assert.match(html, /api\.github\.com\/repos\/Rick84444\/jaco-qwant-llm\/actions\/runs/);
-  assert.doesNotMatch(html, /HF_TOKEN|JACO_MODEL_API_KEY/);
+  // Shell examples may document variable names; never embed an actual credential.
+  assert.doesNotMatch(html, /\\b(?:hf_[A-Za-z0-9]{25,}|sk-[A-Za-z0-9]{25,})\\b/);
+  assert.doesNotMatch(html, /<script[^>]*>[\\s\\S]*?Bearer\\s+hf_/i);
 });
 test("Hugging Face static README distinguishes runtime from trained weights", () => {
   const info=readFileSync(doc,"utf8");
