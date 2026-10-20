@@ -1,0 +1,73 @@
+name: isolated-litert-0171-cpu-build
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/litert-0171-real-build.yml
+
+jobs:
+  pinned-0171-linux-cpu:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install isolated source-build dependencies
+        run: |
+          set -euo pipefail
+          df -h /
+          sudo apt-get update -q
+          sudo apt-get install -y -q ninja-build cmake libabsl-dev libeigen3-dev \
+            libvulkan-dev opencl-headers libegl1-mesa-dev libgles-dev \
+            libgl-dev libflatbuffers-dev pkg-config
+      - name: Fetch LiteRT revision pinned by LiteRT-LM v0.17.1
+        run: |
+          set -euo pipefail
+          git clone --quiet --filter=blob:none --depth=1 --no-checkout \
+            https://github.com/google-ai-edge/LiteRT.git \
+            "$HOME/jaco-litert-acfq-0171-source"
+          git -C "$HOME/jaco-litert-acfq-0171-source" fetch --quiet --depth=1 \
+            origin 9fe5be45564c868408e6514c8aabb83e211a0911
+          git -C "$HOME/jaco-litert-acfq-0171-source" checkout --quiet --detach \
+            9fe5be45564c868408e6514c8aabb83e211a0911
+          test -s "$HOME/jaco-litert-acfq-0171-source/tflite/CMakeLists.txt"
+      - name: Apply separate version-pinned ACFQ source adapter
+        run: |
+          set -euo pipefail
+          python3 native/patch_litert_acfq_v0171.py \
+            --litert-root "$HOME/jaco-litert-acfq-0171-source" --check
+          python3 native/patch_litert_acfq_v0171.py \
+            --litert-root "$HOME/jaco-litert-acfq-0171-source" --apply
+          grep -q 'JACO_ACFQ_TRACE_0171_V1' \
+            "$HOME/jaco-litert-acfq-0171-source/litert/runtime/compiled_model.cc"
+          cmp "$HOME/jaco-litert-acfq-0171-source/litert/runtime/compiled_model.cc.jaco-original" \
+            <(git -C "$HOME/jaco-litert-acfq-0171-source" show \
+              HEAD:litert/runtime/compiled_model.cc)
+      - name: Configure pinned LiteRT 0.17.1 CPU runtime (GPU and NPU disabled)
+        timeout-minutes: 22
+        run: |
+          set -o pipefail
+          cmake -S "$HOME/jaco-litert-acfq-0171-source/litert" \
+            -B "$RUNNER_TEMP/jaco-litert-0171-build" -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release -DLITERT_ENABLE_GPU=OFF \
+            -DLITERT_ENABLE_NPU=OFF -DLITERT_DISABLE_KLEIDIAI=ON \
+            -DLITERT_BUILD_TESTS=OFF -DTFLITE_ENABLE_XNNPACK=ON \
+            2>&1 | tee "$GITHUB_WORKSPACE/litert-0171-configure.log"
+      - name: Compile patched official LiteRT 0.17.1 CPU runtime target
+        timeout-minutes: 22
+        run: |
+          set -o pipefail
+          cmake --build "$RUNNER_TEMP/jaco-litert-0171-build" \
+            --target litert_runtime --parallel 2 \
+            2>&1 | tee "$GITHUB_WORKSPACE/litert-0171-build.log"
+          find "$RUNNER_TEMP/jaco-litert-0171-build" \
+            -name 'liblitert_runtime*' -type f -print
+      - name: Preserve reproducible build evidence (no installable binaries)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: litert-acfq-0171-linux-build-logs
+          path: |
+            litert-0171-configure.log
+            litert-0171-build.log
+          if-no-files-found: ignore
+          retention-days: 7

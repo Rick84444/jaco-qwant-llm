@@ -47,3 +47,18 @@ This downloads the four pinned upstream headers into a **temporary directory**,
 compiles the native candidate with `-Werror=sign-compare`, and runs the
 test callback. It does not access or replace any installed Android wheel,
 nor execute actual Gemma decoding. Only two reviewed LiteRT SHAs may be used.
+
+## Separate native runtime source build (Linux, not Android)
+
+The opt-in GitHub Actions workflow `.github/workflows/litert-0171-real-build.yml`
+builds the exact pinned v0.17.1 LiteRT CPU runtime from a clean checkout with
+our 0.17.1-specific adapter. It never touches the pre-installed Termux wheel,
+model files, or service on port 9379.
+
+This is a stronger test than synthetic/ABI smoke: successful execution
+requires `compiled_model.cc` to compile into an upstream LiteRT
+`litert_runtime` library. It does **not** build or link LiteRT-LM,
+nor prove a genuine Gemma decode, its outputs, Android ABI, or speedups.
+
+CI preserves configure/build logs for review, but does not publish any
+ready-to-install Android library.
