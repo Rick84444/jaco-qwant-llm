@@ -178,6 +178,8 @@ The local Gemma 4 E2B installation remains the default; HF mode is opt-in.
 # Create a fine-grained HF token with "Make calls to Inference Providers".
 # Keep the token private. Never commit it to git or paste it into a public demo.
 export HF_TOKEN="your-private-token"
+# Clear local settings from the previous Gemma/LiteRT session:
+unset JACO_MODEL_BASE_URL JACO_MODEL_ID JACO_MODEL_API_KEY
 export JACO_MODEL_PROVIDER=huggingface
 export JACO_MODEL_THINKING=provider
 ./start.sh models qwen
@@ -192,7 +194,7 @@ export JACO_MODEL_ID="your-org/your-model"
 - `JACO_MODEL_ID` must be available through HF Inference Providers, not merely uploaded to Hub.
 - `JACO_MODEL_API_KEY` may also be used, but no token is stored in JACO's source.
 - HF inference can have usage charges and is subject to provider availability.
-- Disable HF mode and restore local `JACO_MODEL_BASE_URL` and `JACO_MODEL_ID=gemma4-e2b` to return to the Android model.
+- Return to Android Gemma with `unset JACO_MODEL_PROVIDER JACO_MODEL_API_KEY; export JACO_MODEL_BASE_URL=http://127.0.0.1:9379/v1 JACO_MODEL_ID=gemma4-e2b`.
 
 A **free static Hugging Face Space** demonstration lives in
 [`demo/huggingface-space`](demo/huggingface-space/README.md).
@@ -200,3 +202,22 @@ It searches public Hub model cards in real time, never stores credentials, and
 links to HF's hosted Playground for live inference. A public JACO-branded chat
 with secret-funded inference requires a trusted rate-limited backend; the static
 demo intentionally does not claim to run a model or expose a shared token.
+
+### Publish the public Space
+
+The `demo/huggingface-space` folder is deployable as a **static** Space.
+The optional manual workflow `.github/workflows/huggingface-space-publish.yml`
+publishes it without granting runtime or frontend access to your token.
+
+1. Create a Hugging Face fine-grained **write token** with permission to create
+   and/or upload to the target Space. It is separate from your inference token.
+2. Put it in GitHub repository **Actions secret** `HF_SPACE_WRITE_TOKEN`.
+3. Run the workflow **Publish JACO Hugging Face Space** with your desired
+   `space_id` (e.g. `owner/jaco-model-explorer`). It creates a public Static
+   Space if absent and uploads just `README.md` and `index.html`.
+4. Visit the resulting Space. No paid compute, inference model or agent service
+   is automatically deployed.
+
+Alternative: create a public Static Space in the Hugging Face web UI and
+upload those two files manually. The connected HF chat integration currently
+has no write scope, so it cannot publish directly from this conversation.
