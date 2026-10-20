@@ -20,7 +20,9 @@
 namespace jaco_acfq {
 
 inline const TfLiteTensor* Tensor(const TfLiteContext* ctx, int idx) {
-  if (!ctx || idx < 0 || idx >= ctx->tensors_size || !ctx->tensors) return nullptr;
+  // Reject negative indices first; TfLiteContext::tensors_size is size_t.
+  if (!ctx || idx < 0 || !ctx->tensors ||
+      static_cast<size_t>(idx) >= ctx->tensors_size) return nullptr;
   return &ctx->tensors[idx];
 }
 inline bool Elements(const TfLiteTensor* t, int64_t* count) {
