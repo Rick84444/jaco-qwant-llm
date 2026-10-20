@@ -103,6 +103,22 @@ export JACO_MODEL_ID=gemma4-e2b
 ./start.sh chat "Svara kort: vad är 2+2?"</pre>
           <div class="product-actions"><button id="copy-qwant-example" class="probe" type="button">Kopiera testkommando</button><span id="copy-qwant-status" class="receipt" aria-live="polite"></span></div>
         </details>
+        <details>
+          <summary class="action" style="cursor:pointer">Testa QWANT med Hugging Face – utan lokal Gemma</summary>
+          <p class="tech-hint">Det här testar den riktiga JACO QWANT-modelladaptern mot Hugging Faces inferensrouter. Använd din egen privata inference-token. Token anges i din terminal, aldrig på denna offentliga webbsida. Provideranrop kan kosta pengar.</p>
+          <pre class="code-example">git clone https://github.com/Rick84444/jaco-qwant-llm.git
+cd jaco-qwant-llm
+unset JACO_MODEL_BASE_URL JACO_MODEL_ID JACO_MODEL_API_KEY
+export JACO_MODEL_PROVIDER=huggingface
+read -rsp "Hugging Face inference-token: " HF_TOKEN
+echo
+export HF_TOKEN
+./start.sh models qwen
+# Välj ett exakt modell-ID ur listan:
+export JACO_MODEL_ID="REPLACE_WITH_AVAILABLE_MODEL_ID"
+./start.sh chat "Svara kort: vad är 2+2?"</pre>
+          <p class="receipt">Detta är ett verifierbart inferensanrop genom QWANT – inte en autonom JACO-mission eller ACFQ-acceleration. Hugging Face väljer tillgängliga providers enligt sitt aktuella utbud.</p>
+        </details>
         <div class="disclosure">
           <strong>Verifieringsläge:</strong> <span id="qwant-actions-state">Läs de senaste CI-körningarna direkt på GitHub.</span>
           <p class="receipt">Lokala enhetstester och ett syntetiskt kernelbenchmark är inte samma sak som snabbare tokens/sekund i Gemma. JACO QWANT är i nuläget en runtime och en forskningskärna, inte nya publicerade modellvikter.</p>
