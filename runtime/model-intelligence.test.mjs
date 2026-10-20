@@ -52,6 +52,6 @@ test("public demo has no embedded token or fake generation, and model check is o
  assert.match(html,/Kontrollera provider/);
  assert.match(html,/router\.huggingface\.co\/v1\/models/);
  // Documentation of environment variable names is safe; literal secrets are not.
- assert.doesNotMatch(html,/\\b(?:hf_[A-Za-z0-9]{25,}|sk-[A-Za-z0-9]{25,})\\b/);
- assert.doesNotMatch(html,/<script[^>]*>[\\s\\S]*?Bearer\\s+hf_/i);
+ assert.doesNotMatch(html,/\b(?:hf_[A-Za-z0-9]{25,}|sk-[A-Za-z0-9]{25,})\b/);
+ assert.doesNotMatch(html,/<script[^>]*>[\s\S]*?Bearer\s+hf_/i);
 });

@@ -49,6 +49,6 @@ test("static demo is explicitly a catalog, not a fake inference server", () => {
   assert.match(html, /huggingface\.co\/api\/models/);
   assert.match(html, /huggingface\.co\/playground/);
   // Shell examples may document variable names; never embed an actual credential.
-  assert.doesNotMatch(html, /\\b(?:hf_[A-Za-z0-9]{25,}|sk-[A-Za-z0-9]{25,})\\b/);
-  assert.doesNotMatch(html, /<script[^>]*>[\\s\\S]*?Bearer\\s+hf_/i);
+  assert.doesNotMatch(html, /\b(?:hf_[A-Za-z0-9]{25,}|sk-[A-Za-z0-9]{25,})\b/);
+  assert.doesNotMatch(html, /<script[^>]*>[\s\S]*?Bearer\s+hf_/i);
 });
