@@ -67,6 +67,8 @@ jobs:
           JACO_LITERT_ABI_PIN: 9fe5be45564c868408e6514c8aabb83e211a0911
           JACO_LITERT_ABI_SOURCE_MODE: download
         run: bash native/verify_litert_abi.sh
+      - name: Isolated experimental Android package staging safety tests
+        run: python3 -m unittest discover -s native -p 'test_stage_litert_lm_arm64.py'
       - name: Read-only installed LiteRT-LM provenance probe regression tests
         run: python3 -m unittest discover -s native -p 'test_probe_litert_lm_android.py'
       - name: Pinned LiteRT 0.17.1 source adapter tests
