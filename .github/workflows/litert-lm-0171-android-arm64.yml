@@ -8,6 +8,7 @@ on:
       - native/litert_acfq_shadow.h
       - native/gemma_int4_kernel.c
       - native/gemma_int4_kernel.h
+      - native/prepare_litert_bazel_v0171.py
 
 permissions:
   contents: read
@@ -88,6 +89,15 @@ jobs:
             --litert-root "$HOME/jaco-litert-acfq-0171-source" --apply
           grep -q JACO_ACFQ_SHADOW_SOURCE_PATCH_V1 \
             "$HOME/jaco-litert-acfq-0171-source/litert/runtime/compiled_model.cc"
+      - name: Declare ACFQ sources in the pinned Bazel compiled_model rule
+        run: |
+          set -euo pipefail
+          python3 native/prepare_litert_bazel_v0171.py \
+            --litert-root "$HOME/jaco-litert-acfq-0171-source" --check
+          python3 native/prepare_litert_bazel_v0171.py \
+            --litert-root "$HOME/jaco-litert-acfq-0171-source" --apply
+          grep -q '"jaco_acfq_native/gemma_int4_kernel.c"' \
+            "$HOME/jaco-litert-acfq-0171-source/litert/runtime/BUILD"
       - name: Build full LiteRT-LM v0.17.1 Android ARM64 native shared library
         timeout-minutes: 75
         run: |
