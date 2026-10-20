@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { configFromEnv, inspectProvider, chatCompletion } from "./provider.mjs";
+import { configFromEnv, inspectProvider, chatCompletion, discoverModels } from "./provider.mjs";
 import { capabilities, serve } from "./server.mjs";
 const [command = "serve", ...args] = process.argv.slice(2);
 async function main() {
@@ -23,6 +23,15 @@ async function main() {
     }
     return;
   }
+  if (command === "models") {
+    const all = await discoverModels(cfg);
+    const query = args.join(" ").toLowerCase().trim();
+    const matches = query ? all.filter(id => id.toLowerCase().includes(query)) : all;
+    console.log(JSON.stringify({ provider: cfg.provider, total: all.length,
+      matching: matches.length, models: matches.slice(0, 40),
+      truncated: matches.length > 40 }, null, 2));
+    return;
+  }
   if (command === "chat") {
     const prompt = args.join(" ").trim();
     if (!prompt) throw new Error('Usage: ./start.sh chat "Hej JACO"');
@@ -38,7 +47,7 @@ async function main() {
     console.log(answer);
     return;
   }
-  console.error("Usage: ./start.sh [serve|status|doctor|capabilities|chat TEXT]");
+  console.error("Usage: ./start.sh [serve|status|doctor|capabilities|models [QUERY]|chat TEXT]");
   process.exitCode = 2;
 }
 main().catch(err => { console.error("JACO Model Runtime: " + err.message); process.exitCode = 1; });

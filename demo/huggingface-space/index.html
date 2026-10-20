@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Utforska öppna AI-modeller för JACO via Hugging Face.">
+  <title>JACO — Model Explorer</title>
+  <style>
+    :root { font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; color: #e8ecfa; background: #0c1120; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    a { color: inherit; }
+    .shell { max-width: 1100px; margin: auto; padding: 28px 22px 60px; }
+    header { display: flex; justify-content: space-between; gap: 20px; align-items: center; flex-wrap: wrap; }
+    .brand { font-weight: 800; letter-spacing: .22em; font-size: 20px; }
+    .toplink { color: #b5c6eb; text-decoration: none; font-size: 14px; }
+    .eyebrow { text-transform: uppercase; letter-spacing: .16em; color: #92a4c7; font-size: 12px; margin: 72px 0 14px; }
+    h1 { font-size: clamp(36px, 6vw, 64px); line-height: 1.04; letter-spacing: -.055em; max-width: 850px; margin: 0 0 22px; }
+    p { color: #aebbd7; line-height: 1.65; }
+    .lead { max-width: 700px; font-size: 17px; }
+    .note { border: 1px solid #384466; border-radius: 14px; padding: 14px 17px; margin: 28px 0; color: #c6d3eb; font-size: 14px; background: #151c31; }
+    .toolbar { display: grid; grid-template-columns: 1fr 230px auto; gap: 10px; margin: 36px 0 16px; }
+    input,select,button { font: inherit; border-radius: 10px; padding: 13px 15px; min-height: 48px; }
+    input,select { width: 100%; border: 1px solid #384663; background: #151d33; color: #f2f5ff; }
+    button { background: #e7eaf7; color: #11152a; border: 1px solid #e7eaf7; font-weight: 700; cursor: pointer; }
+    button:hover { background: #d1dcff; }
+    button:disabled { opacity: .6; cursor: wait; }
+    input:focus-visible, select:focus-visible, a:focus-visible, button:focus-visible { outline: 3px solid #a4b8ff; outline-offset: 2px; }
+    #status { min-height: 28px; color: #a9b7d7; font-size: 14px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-top: 12px; }
+    article { border: 1px solid #2e3b58; background: #141c30; border-radius: 14px; padding: 19px; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+    article h2 { font-size: 17px; overflow-wrap: anywhere; line-height: 1.3; margin: 0; }
+    .task { font-size: 12px; border-radius: 6px; background: #27385a; color: #c5d8ff; display: inline-block; padding: 5px 8px; }
+    .meta { color: #abb8d5; font-size: 13px; flex: 1; }
+    .action { color: #adc2ff; text-decoration: none; font-weight: 600; font-size: 14px; }
+    footer { border-top: 1px solid #2b3650; margin-top: 50px; padding-top: 24px; font-size: 13px; color: #92a4c7; }
+    @media (max-width: 690px) { .toolbar { grid-template-columns: 1fr; } .eyebrow { margin-top: 45px; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header><div class="brand">JACO<span style="color:#7e9fff">.</span></div>
+      <a class="toplink" href="https://github.com/Rick84444/jaco-qwant-llm" target="_blank" rel="noopener noreferrer">Open source ↗</a>
+    </header>
+    <main>
+      <div class="eyebrow">Cognitive runtime · Public preview</div>
+      <h1>En AI-plattform.<br>Många modellval.</h1>
+      <p class="lead">Utforska öppna AI-modeller på Hugging Face för framtida JACO-integration. Sök direkt i den publika katalogen, läs modellkorten och prova tillgängliga modeller i Hugging Faces Playground.</p>
+      <div class="note"><strong>Vad fungerar i denna demo?</strong> Live sökning efter offentliga modellkort. Detta är inte en körande JACO-agent eller en inferensserver. Modeller på Hubben kan sakna en aktiv inferensleverantör. Inga API-nycklar efterfrågas eller lagras.</div>
+      <form id="search-form" class="toolbar" autocomplete="off">
+        <input id="search" name="search" maxlength="80" placeholder="Sök exempelvis Qwen, Gemma, DeepSeek..." aria-label="Sök modeller">
+        <select id="task" aria-label="Modelltyp">
+          <option value="">Alla modelltyper</option>
+          <option value="text-generation">Text och kod</option>
+          <option value="image-text-to-text">Multimodalt</option>
+          <option value="text-to-image">Bildgenerering</option>
+          <option value="automatic-speech-recognition">Taligenkänning</option>
+          <option value="feature-extraction">Embeddings</option>
+        </select>
+        <button id="find" type="submit">Sök modeller</button>
+      </form>
+      <div id="status" role="status" aria-live="polite">Hämtar aktuell modellkatalog…</div>
+      <section id="models" class="grid" aria-label="Modellträffar"></section>
+      <div class="note">Vill du testa faktisk AI-generering? Öppna <a href="https://huggingface.co/playground" target="_blank" rel="noopener noreferrer">Hugging Face Inference Playground ↗</a>. Modellåtkomst kan kräva inloggning och medföra användningskostnader.</div>
+    </main>
+    <footer>JACO Model Explorer · Fristående gratisdemo · Lokal inferens och experimentell ACFQ-optimering körs inte här.</footer>
+  </div>
+  <script>
+    const form = document.querySelector("#search-form");
+    const status = document.querySelector("#status");
+    const grid = document.querySelector("#models");
+    const find = document.querySelector("#find");
+    const search = document.querySelector("#search");
+    const task = document.querySelector("#task");
+    let activeRequest;
+    const format = new Intl.NumberFormat("sv-SE");
+    function element(tag, cls, text) {
+      const node = document.createElement(tag);
+      if (cls) node.className = cls;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+    function modelCard(model) {
+      if (typeof model.id !== "string" || !/^[\w.-]+\/[\w./-]+$/.test(model.id)) return null;
+      const card = element("article");
+      card.append(element("h2", "", model.id));
+      card.append(element("div", "", "").appendChild(element("span", "task", model.pipeline_tag || "Oklassificerad")).parentNode);
+      const meta = element("div", "meta", (format.format(model.downloads || 0)) + " nedladdningar · " + format.format(model.likes || 0) + " gillningar");
+      card.append(meta);
+      const link = element("a", "action", "Öppna modellkort ↗");
+      link.href = "https://huggingface.co/" + model.id.split("/").map(encodeURIComponent).join("/");
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      card.append(link);
+      return card;
+    }
+    async function loadModels() {
+      if (activeRequest) activeRequest.abort();
+      const controller = new AbortController();
+      activeRequest = controller;
+      const url = new URL("https://huggingface.co/api/models");
+      url.searchParams.set("sort", "downloads");
+      url.searchParams.set("direction", "-1");
+      url.searchParams.set("limit", "30");
+      if (search.value.trim()) url.searchParams.set("search", search.value.trim());
+      if (task.value) url.searchParams.set("pipeline_tag", task.value);
+      find.disabled = true;
+      status.textContent = "Söker i Hugging Face Hub…";
+      grid.replaceChildren();
+      try {
+        const response = await fetch(url.toString(), { signal: controller.signal, headers: { accept: "application/json" } });
+        if (!response.ok) throw new Error("Hugging Face svarade HTTP " + response.status);
+        const models = await response.json();
+        if (!Array.isArray(models)) throw new Error("Felaktigt svar från modellkatalogen");
+        let count = 0;
+        for (const model of models) { const card = modelCard(model); if (card) { grid.append(card); count++; } }
+        status.textContent = count ? count + " modeller visas. Katalogträff betyder inte aktiv inferens." : "Inga matchande modeller hittades.";
+      } catch (error) {
+        if (error.name !== "AbortError") status.textContent = "Kunde inte hämta modeller: " + error.message + ". Prova igen senare.";
+      } finally {
+        if (activeRequest === controller) { activeRequest = null; find.disabled = false; }
+      }
+    }
+    form.addEventListener("submit", event => { event.preventDefault(); loadModels(); });
+    loadModels();
+  </script>
+</body>
+</html>

@@ -6,11 +6,22 @@ export class RuntimeError extends Error {
   }
 }
 export function configFromEnv(env = process.env) {
-  const raw = env.JACO_MODEL_BASE_URL || "http://127.0.0.1:11435/v1";
+  const provider = (env.JACO_MODEL_PROVIDER || "custom").trim().toLowerCase();
+  if (!["custom", "huggingface"].includes(provider))
+    throw new RuntimeError("JACO_MODEL_PROVIDER must be custom or huggingface", 400);
+  const raw = env.JACO_MODEL_BASE_URL ||
+    (provider === "huggingface" ? "https://router.huggingface.co/v1" : "http://127.0.0.1:11435/v1");
   let url;
   try { url = new URL(raw); } catch { throw new RuntimeError("Invalid JACO_MODEL_BASE_URL", 400); }
   if (!["http:", "https:"].includes(url.protocol) || url.username || url.password || url.search || url.hash)
     throw new RuntimeError("Model URL must be HTTP(S) without credentials or query", 400);
+  // HF_TOKEN is never sent to an arbitrary URL or local provider by default.
+  if (provider === "huggingface" &&
+      (url.origin !== "https://router.huggingface.co" || url.pathname.replace(/\/+$/, "") !== "/v1"))
+    throw new RuntimeError("Hugging Face mode only permits https://router.huggingface.co/v1", 400);
+  const apiKey = env.JACO_MODEL_API_KEY || (provider === "huggingface" ? env.HF_TOKEN || "" : "");
+  if (provider === "huggingface" && !apiKey)
+    throw new RuntimeError("Set HF_TOKEN or JACO_MODEL_API_KEY for Hugging Face mode", 400);
   const timeoutMs = Number(env.JACO_MODEL_TIMEOUT_MS || 300000);
   const port = Number(env.JACO_MODEL_RUNTIME_PORT || 3131);
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1000 || timeoutMs > 600000)
@@ -21,7 +32,7 @@ export function configFromEnv(env = process.env) {
   if (!["auto", "off", "on", "provider"].includes(thinkingMode))
     throw new RuntimeError("JACO_MODEL_THINKING must be auto, off, on or provider", 400);
   return { baseUrl: url.toString().replace(/\/+$/, ""), model: env.JACO_MODEL_ID?.trim() || null,
-    apiKey: env.JACO_MODEL_API_KEY || "", timeoutMs, port, thinkingMode };
+    apiKey, provider, timeoutMs, port, thinkingMode };
 }
 async function request(config, path, opts = {}, fetchImpl = fetch) {
   const timeout = AbortSignal.timeout(config.timeoutMs);
@@ -46,7 +57,9 @@ export function selectModel(config, models, explicit = null) {
   const model = explicit || config.model;
   if (model) {
     if (typeof model !== "string") throw new RuntimeError("Invalid model ID", 400);
-    if (!models.includes(model)) throw new RuntimeError("Selected model absent from provider", 503);
+    const canonical = config.provider === "huggingface" ?
+      model.replace(/:(fastest|cheapest|preferred)$/, "") : model;
+    if (!models.includes(canonical)) throw new RuntimeError("Selected model absent from provider", 503);
     return model;
   }
   if (models.length === 1) return models[0];

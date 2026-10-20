@@ -168,3 +168,35 @@ requires identifying a supported custom operator/delegate interface,
 matching tensor types and layouts, and passing numerical and end-to-end tests.
 
 See [LiteRT source architecture review](research/README.md) for evidence-first native integration analysis.
+
+## Hugging Face models and free public demo
+
+JACO can use **Hugging Face Inference Providers** via the SAME model runtime.
+The local Gemma 4 E2B installation remains the default; HF mode is opt-in.
+
+```sh
+# Create a fine-grained HF token with "Make calls to Inference Providers".
+# Keep the token private. Never commit it to git or paste it into a public demo.
+export HF_TOKEN="your-private-token"
+export JACO_MODEL_PROVIDER=huggingface
+export JACO_MODEL_THINKING=provider
+./start.sh models qwen
+# Choose an exact ID from the returned inference model list.
+export JACO_MODEL_ID="your-org/your-model"
+./start.sh doctor
+./start.sh chat "Svara kort: hej"
+```
+
+- `JACO_MODEL_PROVIDER=huggingface` selects only `https://router.huggingface.co/v1`.
+- Only this explicit mode reads `HF_TOKEN`; custom and local providers never inherit it.
+- `JACO_MODEL_ID` must be available through HF Inference Providers, not merely uploaded to Hub.
+- `JACO_MODEL_API_KEY` may also be used, but no token is stored in JACO's source.
+- HF inference can have usage charges and is subject to provider availability.
+- Disable HF mode and restore local `JACO_MODEL_BASE_URL` and `JACO_MODEL_ID=gemma4-e2b` to return to the Android model.
+
+A **free static Hugging Face Space** demonstration lives in
+[`demo/huggingface-space`](demo/huggingface-space/README.md).
+It searches public Hub model cards in real time, never stores credentials, and
+links to HF's hosted Playground for live inference. A public JACO-branded chat
+with secret-funded inference requires a trusted rate-limited backend; the static
+demo intentionally does not claim to run a model or expose a shared token.
