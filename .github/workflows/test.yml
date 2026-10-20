@@ -66,6 +66,8 @@ jobs:
         run: python3 -m unittest discover -s native -p 'test_probe_litert_lm_android.py'
       - name: Previously patched sparse-checkout refresh regression tests
         run: python3 -m unittest discover -s native -p 'test_refresh_litert_acfq_source.py'
+      - name: Refresh tests run by explicit file path (Termux regression)
+        run: python3 -m unittest native/test_refresh_litert_acfq_source.py
       - name: Delegate trace source-patch regression tests
         run: python3 -m unittest discover -s native -p 'test_patch_litert_acfq_trace.py'
       - name: Local review context-budget regression tests

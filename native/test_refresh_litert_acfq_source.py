@@ -2,6 +2,14 @@
 import unittest
 import tempfile
 from pathlib import Path
+import sys
+
+# Direct execution (python -m unittest native/test_...py) puts the repository
+# root, not native/, on sys.path. Keep sibling imports available both in direct
+# invocation and in unittest discover -s native.
+_native_dir = str(Path(__file__).resolve().parent)
+if _native_dir not in sys.path:
+    sys.path.insert(0, _native_dir)
 
 import patch_litert_acfq as patch
 from refresh_litert_acfq_source import (classify_source, expected_legacy_source,
