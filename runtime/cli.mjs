@@ -1,9 +1,22 @@
 #!/usr/bin/env node
-import { configFromEnv, inspectProvider, chatCompletion, discoverModels } from "./provider.mjs";
+import { configFromEnv, inspectProvider, chatCompletion, discoverModels, discoverModelDetails } from "./provider.mjs";
 import { capabilities, serve } from "./server.mjs";
+import { recommendModels, rankLiveCandidates } from "./model-intelligence.mjs";
 const [command = "serve", ...args] = process.argv.slice(2);
 async function main() {
+  if (command === "recommend") {
+    const goal = args[0] || "coding";
+    return console.log(JSON.stringify({ goal, kind:"editorial-not-benchmark",
+      checkedProviders:false, models:recommendModels(goal) }, null, 2));
+  }
   const cfg = configFromEnv();
+  if (command === "rank") {
+    if (cfg.provider !== "huggingface") throw new Error("rank requires JACO_MODEL_PROVIDER=huggingface");
+    const goal = args[0] || "coding";
+    const models = await discoverModelDetails(cfg);
+    return console.log(JSON.stringify({ goal, kind:"live-provider-metadata-not-model-benchmark",
+      checkedProviders:true, models:rankLiveCandidates(models, goal) }, null, 2));
+  }
   if (command === "serve") return serve(cfg);
   if (command === "capabilities") return console.log(JSON.stringify(capabilities(), null, 2));
   if (command === "doctor") {
@@ -47,7 +60,7 @@ async function main() {
     console.log(answer);
     return;
   }
-  console.error("Usage: ./start.sh [serve|status|doctor|capabilities|models [QUERY]|chat TEXT]");
+  console.error("Usage: ./start.sh [serve|status|doctor|capabilities|models [QUERY]|recommend [GOAL]|rank [GOAL]|chat TEXT]");
   process.exitCode = 2;
 }
 main().catch(err => { console.error("JACO Model Runtime: " + err.message); process.exitCode = 1; });

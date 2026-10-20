@@ -34,6 +34,16 @@
     .task { font-size: 12px; border-radius: 6px; background: #27385a; color: #c5d8ff; display: inline-block; padding: 5px 8px; }
     .meta { color: #abb8d5; font-size: 13px; flex: 1; }
     .action { color: #adc2ff; text-decoration: none; font-weight: 600; font-size: 14px; }
+    h2.section-title { margin: 0 0 8px; font-size: 24px; letter-spacing: -.03em; }
+    .featured { margin-top: 36px; }
+    .pick-head { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+    .pick-head select { max-width:215px; }
+    .why { font-size:14px; color:#dae4fc; margin:0; }
+    .constraint { font-size:13px; color:#adb9d5; margin:0; }
+    .tags { display:flex; gap:7px; flex-wrap:wrap; }
+    .provider-status { font-size:13px; color:#b7c6e5; white-space:pre-wrap; }
+    .probe { font-size:13px; padding:9px 11px; min-height:36px; background:transparent; color:#d7e5ff; border:1px solid #50618b; }
+    .linkrow { display:flex; align-items:center; flex-wrap:wrap; gap:16px; }
     footer { border-top: 1px solid #2b3650; margin-top: 50px; padding-top: 24px; font-size: 13px; color: #92a4c7; }
     @media (max-width: 690px) { .toolbar { grid-template-columns: 1fr; } .eyebrow { margin-top: 45px; } }
   </style>
@@ -48,6 +58,15 @@
       <h1>En AI-plattform.<br>Många modellval.</h1>
       <p class="lead">Utforska öppna AI-modeller på Hugging Face för framtida JACO-integration. Sök direkt i den publika katalogen, läs modellkorten och prova tillgängliga modeller i Hugging Faces Playground.</p>
       <div class="note"><strong>Vad fungerar i denna demo?</strong> Live sökning efter offentliga modellkort. Detta är inte en körande JACO-agent eller en inferensserver. Modeller på Hubben kan sakna en aktiv inferensleverantör. Inga API-nycklar efterfrågas eller lagras.</div>
+      <section class="featured" aria-label="JACO:s modellkandidater">
+        <div class="pick-head"><div><h2 class="section-title">Modeller att utvärdera</h2><p>Granskat urval, inte ett uppmätt benchmark eller löfte om driftskompatibilitet.</p></div>
+        <select id="pick-goal" aria-label="Välj användningsområde">
+          <option value="coding">Kodutveckling</option><option value="agents">Autonoma agenter</option>
+          <option value="local">Lokal drift</option><option value="multimodal">Multimodalt</option>
+        </select></div>
+        <p id="pick-status" role="status" aria-live="polite">Läser kandidatlistan…</p>
+        <div id="picks" class="grid"></div>
+      </section>
       <form id="search-form" class="toolbar" autocomplete="off">
         <input id="search" name="search" maxlength="80" placeholder="Sök exempelvis Qwen, Gemma, DeepSeek..." aria-label="Sök modeller">
         <select id="task" aria-label="Modelltyp">
@@ -122,7 +141,86 @@
         if (activeRequest === controller) { activeRequest = null; find.disabled = false; }
       }
     }
+    // Editorial selection and live provider metadata are separate evidence layers.
+    const picks = document.querySelector("#picks");
+    const pickGoal = document.querySelector("#pick-goal");
+    const pickStatus = document.querySelector("#pick-status");
+    let candidateCatalog = [];
+    function makePick(m) {
+      const card = element("article");
+      card.append(element("h2", "", m.name));
+      const tags = element("div", "tags");
+      tags.append(element("span", "task", m.size));
+      tags.append(element("span", "task", m.license));
+      card.append(tags);
+      card.append(element("p", "why", m.rationale));
+      card.append(element("p", "constraint", "Begränsning: " + m.constraint));
+      const meta = element("div", "meta", "Drift: " + m.deployment + " · Redaktionell matchning " + m.fit[pickGoal.value] + "/5 (ej benchmark)");
+      card.append(meta);
+      const status = element("div", "provider-status", "Inferens och verktygsstöd: inte kontrollerat live");
+      card.append(status);
+      const links = element("div", "linkrow");
+      const link = element("a", "action", "Modellkort ↗");
+      link.href = m.source;
+      link.target="_blank";
+      link.rel="noopener noreferrer";
+      links.append(link);
+      const button = element("button", "probe", "Kontrollera provider");
+      button.type="button";
+      button.addEventListener("click", async () => {
+        button.disabled=true;
+        status.textContent="Hämtar aktuell providerstatus…";
+        const controller=new AbortController();
+        const timeout=setTimeout(()=>controller.abort(),9000);
+        try {
+          // Public metadata only: no personal token, no paid inference call.
+          const endpoint="https://router.huggingface.co/v1/models/"+m.id.split("/").map(encodeURIComponent).join("/");
+          const response=await fetch(endpoint,{signal:controller.signal,headers:{accept:"application/json"}});
+          if(!response.ok) throw new Error("HTTP "+response.status);
+          const result=await response.json();
+          const record=result && result.data && !Array.isArray(result.data) ? result.data : result;
+          const active=Array.isArray(record?.providers)?record.providers.filter(p=>p && p.status==="live"):[];
+          if(!active.length) {
+            status.textContent="Ingen live-provider kunde bekräftas i metadata. Det bevisar inte att modellen saknar drift.";
+          } else {
+            status.textContent=active.map(p=>{
+              let line=p.provider+": live · verktyg "+(p.supports_tools===true?"ja":p.supports_tools===false?"nej":"ej angivet");
+              if(typeof p.pricing?.input==="number" && typeof p.pricing?.output==="number")
+                line+=" · $"+p.pricing.input+"/$"+p.pricing.output+" per 1M in/ut-token";
+              return line;
+            }).join("\n")+"\nMetadata är inte ett genomfört inferenstest.";
+          }
+        } catch {
+          status.textContent="Kunde inte verifiera live i webbläsaren (API/CORS/nätverk). Kontrollera leverantörer på modellkortet.";
+        } finally {clearTimeout(timeout);button.disabled=false;}
+      });
+      links.append(button);
+      card.append(links);
+      return card;
+    }
+    function renderPicks() {
+      picks.replaceChildren();
+      const goal=pickGoal.value;
+      const candidates=candidateCatalog.filter(x=>x.focus.includes(goal))
+        .sort((a,b)=>(b.fit[goal]-a.fit[goal]) || a.id.localeCompare(b.id));
+      candidates.forEach(m=>picks.append(makePick(m)));
+      pickStatus.textContent=candidates.length+" kandidater. Poäng visar redaktionell användningsmatchning, inte uppmätt kvalitet.";
+    }
+    async function loadPicks() {
+      try {
+        const res=await fetch("./catalog.json",{headers:{accept:"application/json"}});
+        if(!res.ok) throw new Error("HTTP "+res.status);
+        const data=await res.json();
+        if(!Array.isArray(data.models)||!Array.isArray(data.goals)) throw new Error("Felaktig katalog");
+        candidateCatalog=data.models.filter(m=>typeof m.id==="string"&&m.fit&&m.source&&Array.isArray(m.focus));
+        renderPicks();
+      } catch {
+        pickStatus.textContent="Kandidatlistan är inte tillgänglig. Den öppna Hugging Face-sökningen nedanför kan fortfarande användas.";
+      }
+    }
+    pickGoal.addEventListener("change",renderPicks);
     form.addEventListener("submit", event => { event.preventDefault(); loadModels(); });
+    loadPicks();
     loadModels();
   </script>
 </body>

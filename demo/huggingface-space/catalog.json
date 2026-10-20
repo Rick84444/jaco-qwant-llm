@@ -1,0 +1,158 @@
+{
+  "asOf": "2026-10-20",
+  "methodology": "Editorial JACO use-case screening, not a measured benchmark or guarantee. Hosting, tool support and prices must be checked live.",
+  "goals": [
+    "coding",
+    "agents",
+    "local",
+    "multimodal"
+  ],
+  "models": [
+    {
+      "id": "Qwen/Qwen3-Coder-Next",
+      "name": "Qwen3-Coder-Next",
+      "license": "Apache-2.0",
+      "size": "80B total / 3B active",
+      "focus": [
+        "coding",
+        "agents"
+      ],
+      "fit": {
+        "coding": 5,
+        "agents": 5,
+        "local": 2,
+        "multimodal": 1
+      },
+      "deployment": "workstation-or-cloud",
+      "rationale": "Purpose-built for coding agents and long tool workflows; 256k context claimed by author.",
+      "constraint": "80B total weights still require considerable memory. Not a verified mobile option.",
+      "source": "https://huggingface.co/Qwen/Qwen3-Coder-Next"
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "name": "DeepSeek V4.1 Flash",
+      "license": "MIT",
+      "size": "552B MoE backbone (provider-reported)",
+      "focus": [
+        "coding",
+        "agents",
+        "multimodal"
+      ],
+      "fit": {
+        "coding": 5,
+        "agents": 5,
+        "local": 1,
+        "multimodal": 4
+      },
+      "deployment": "cloud",
+      "rationale": "Promising for long-context code and multi-step agents; asymmetric prefill/decode design.",
+      "constraint": "Very large weights. Vendor benchmark scores need independent JACO reproduction.",
+      "source": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash"
+    },
+    {
+      "id": "Qwen/Qwen3.8-27B",
+      "name": "Qwen3.8-27B",
+      "license": "Apache-2.0",
+      "size": "27B dense",
+      "focus": [
+        "coding",
+        "agents",
+        "local",
+        "multimodal"
+      ],
+      "fit": {
+        "coding": 5,
+        "agents": 4,
+        "local": 4,
+        "multimodal": 5
+      },
+      "deployment": "workstation-or-cloud",
+      "rationale": "Flexible reasoning and native vision; practical candidate for quantized workstation experiments.",
+      "constraint": "Not recommended for Pixel 10 Pro without measured memory, decode and temperature tests.",
+      "source": "https://huggingface.co/Qwen/Qwen3.8-27B"
+    },
+    {
+      "id": "moonshotai/Kimi-K3",
+      "name": "Kimi K3",
+      "license": "Kimi K3 license",
+      "size": "2.8T total / 104B active",
+      "focus": [
+        "coding",
+        "agents",
+        "multimodal"
+      ],
+      "fit": {
+        "coding": 5,
+        "agents": 5,
+        "local": 1,
+        "multimodal": 5
+      },
+      "deployment": "cloud",
+      "rationale": "Very large multimodal long-horizon reasoning model with 1M-context claim.",
+      "constraint": "Special license needs review. Vast model: cloud inference only in this JACO plan.",
+      "source": "https://huggingface.co/moonshotai/Kimi-K3"
+    },
+    {
+      "id": "zai-org/GLM-5.3-Flash",
+      "name": "GLM-5.3-Flash",
+      "license": "MIT",
+      "size": "320B total / 18B active",
+      "focus": [
+        "coding",
+        "agents",
+        "multimodal"
+      ],
+      "fit": {
+        "coding": 4,
+        "agents": 5,
+        "local": 1,
+        "multimodal": 5
+      },
+      "deployment": "cloud",
+      "rationale": "Sparse/linear attention architecture and agent-workflow emphasis.",
+      "constraint": "Large total weights; low active count does not mean phone-scale storage.",
+      "source": "https://huggingface.co/zai-org/GLM-5.3-Flash"
+    },
+    {
+      "id": "google/gemma-4-E2B",
+      "name": "Gemma 4 E2B",
+      "license": "Apache-2.0",
+      "size": "Effective 2B class",
+      "focus": [
+        "local",
+        "multimodal"
+      ],
+      "fit": {
+        "coding": 2,
+        "agents": 3,
+        "local": 5,
+        "multimodal": 4
+      },
+      "deployment": "android-local",
+      "rationale": "JACO already has real LiteRT-LM Gemma 4 E2B inference on Android; reliable baseline.",
+      "constraint": "Small-model tool chaining and long-repo tasks require testing; ACFQ not integrated.",
+      "source": "https://huggingface.co/google/gemma-4-E2B"
+    },
+    {
+      "id": "openai/gpt-oss-20b",
+      "name": "gpt-oss-20b",
+      "license": "Apache-2.0",
+      "size": "21B total / 3.6B active",
+      "focus": [
+        "coding",
+        "agents",
+        "local"
+      ],
+      "fit": {
+        "coding": 4,
+        "agents": 4,
+        "local": 3,
+        "multimodal": 1
+      },
+      "deployment": "workstation-or-cloud",
+      "rationale": "Reasoning and tool use; alternative to compare with Qwen on a capable workstation.",
+      "constraint": "Requires a runtime that handles the Harmony format correctly. Not verified on Pixel.",
+      "source": "https://huggingface.co/openai/gpt-oss-20b"
+    }
+  ]
+}

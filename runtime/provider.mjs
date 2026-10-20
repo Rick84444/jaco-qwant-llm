@@ -45,13 +45,16 @@ async function request(config, path, opts = {}, fetchImpl = fetch) {
     throw new RuntimeError("Model provider unavailable or timeout: " + error.message, 502);
   }
 }
-export async function discoverModels(config, fetchImpl = fetch) {
+export async function discoverModelDetails(config, fetchImpl = fetch) {
   const res = await request(config, "models", {}, fetchImpl);
   if (!res.ok) throw new RuntimeError("Model discovery returned HTTP " + res.status, 502);
   let data;
   try { data = await res.json(); } catch { throw new RuntimeError("Model discovery returned invalid JSON", 502); }
   if (!Array.isArray(data?.data)) throw new RuntimeError("Model discovery returned no list", 502);
-  return data.data.filter(x => typeof x?.id === "string" && x.id.length).map(x => x.id);
+  return data.data.filter(x => typeof x?.id === "string" && x.id.length);
+}
+export async function discoverModels(config, fetchImpl = fetch) {
+  return (await discoverModelDetails(config, fetchImpl)).map(x=>x.id);
 }
 export function selectModel(config, models, explicit = null) {
   const model = explicit || config.model;

@@ -221,3 +221,19 @@ publishes it without granting runtime or frontend access to your token.
 Alternative: create a public Static Space in the Hugging Face web UI and
 upload those two files manually. The connected HF chat integration currently
 has no write scope, so it cannot publish directly from this conversation.
+
+## Evidence-backed model research and router selection
+
+- `./start.sh recommend coding` — curated recommendations; no token or network
+  needed. Other goals: `agents`, `local`, `multimodal`.
+- `./start.sh rank agents` — in opt-in Hugging Face mode, inspect the actual
+  router `/v1/models` provider metadata; keep only models with a **live**
+  provider that explicitly advertises tool calling for agent jobs.
+- Only a completed inference request with tests can prove generation quality.
+  Ranking does not activate, download, pay for or run a model.
+- Source: `demo/huggingface-space/catalog.json`, one canonical catalog
+  read by both the CLI and the static public demo.
+- Methodology and caveats: `research/HF_MODEL_REVIEW_2026-10-20.md`.
+
+Be careful: `rank` uses your Hugging Face token but requests metadata only.
+The public Space never receives credentials.
