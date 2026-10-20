@@ -80,3 +80,17 @@ loads, or that tokens/s improved.
 The hook cannot be installed into the existing Android wheel simply by
 copying the resulting Linux executable or static libraries. No wheel
 replacement or model manipulation occurs.
+
+## Real public TFLite model inference test
+
+The Linux isolated-source workflow now compiles and runs
+`native/litert_0171_runtime_invoke_probe.cc` against the same
+patched LiteRT C API used by the linked construction probe. It reads
+Google's public `ff.tflite`, allocates its declared input/output
+buffers, zeros inputs, calls `LiteRtRunCompiledModel`, and fails
+unless real execution succeeds. It does **not** load Gemma.
+
+A `builtin_callback_invoked` log is useful evidence that a CPU
+operator reached the wrapper, but no such log may appear if the
+chosen public model contains no relevant FC node or a delegate
+bypasses the builtin. No `native_invocations` or speedup is assumed.
